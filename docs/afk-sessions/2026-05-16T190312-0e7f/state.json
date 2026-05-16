@@ -7,10 +7,10 @@
   "budgetPercent": null,
   "checkpointMinutes": 30,
   "status": "active",
-  "commits": 1,
+  "commits": 20,
   "escalations": 0,
   "deferred": 0,
-  "lastTickAt": "2026-05-16T19:09:33.001Z",
+  "lastTickAt": "2026-05-16T19:30:58.536Z",
   "stopReason": null,
   "openAsks": [],
   "answers": {}

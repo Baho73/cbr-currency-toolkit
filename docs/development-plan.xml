@@ -432,7 +432,7 @@
   </DataFlow>
 
   <ImplementationOrder>
-    <Phase-1 name="Task 2 — async CLI-аналитик" status="pending">
+    <Phase-1 name="Task 2 — async CLI-аналитик" status="done">
       <goal>Полностью рабочий асинхронный CLI с Docker, экспортом и тестами — самый изолированный проект, служит эталоном паттернов клиента/ошибок.</goal>
       <step-1 module="M-T2-CONFIG" status="pending" verification="V-M-T2-CONFIG">Конфигурация CLI</step-1>
       <step-2 module="M-T2-ERRORS" status="pending" verification="V-M-T2-ERRORS">Иерархия исключений</step-2>
@@ -451,7 +451,7 @@
       </checkpoint>
     </Phase-1>
 
-    <Phase-2 name="Task 1 — FastAPI веб-конвертер" status="pending">
+    <Phase-2 name="Task 1 — FastAPI веб-конвертер" status="done">
       <goal>Рабочий веб-конвертер с async-бэкендом, TTL-кэшем, фронтендом, Docker и тестами.</goal>
       <step-1 module="M-T1-CONFIG" status="pending" verification="V-M-T1-CONFIG">Конфигурация веб-приложения</step-1>
       <step-2 module="M-T1-ERRORS" status="pending" verification="V-M-T1-ERRORS">Иерархия исключений</step-2>

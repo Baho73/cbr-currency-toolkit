@@ -4,7 +4,7 @@
     <annotation>Монорепозиторий из трёх независимых самодостаточных утилит вокруг публичного API курсов валют ЦБ РФ. Три проекта не имеют кросс-задачных зависимостей.</annotation>
 
     <!-- ==================== TASK 1: task1-currency-web ==================== -->
-    <M-T1-CONFIG NAME="Config" TYPE="UTILITY" STATUS="planned">
+    <M-T1-CONFIG NAME="Config" TYPE="UTILITY" STATUS="implemented">
       <purpose>Типизированная конфигурация веб-конвертера из переменных окружения.</purpose>
       <path>task1-currency-web/app/config.py</path>
       <depends>none</depends>
@@ -15,7 +15,7 @@
       </annotations>
     </M-T1-CONFIG>
 
-    <M-T1-ERRORS NAME="Errors" TYPE="UTILITY" STATUS="planned">
+    <M-T1-ERRORS NAME="Errors" TYPE="UTILITY" STATUS="implemented">
       <purpose>Иерархия доменных исключений конвертера.</purpose>
       <path>task1-currency-web/app/errors.py</path>
       <depends>none</depends>
@@ -29,7 +29,7 @@
       </annotations>
     </M-T1-ERRORS>
 
-    <M-T1-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" STATUS="planned">
+    <M-T1-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" STATUS="implemented">
       <purpose>Неизменяемые доменные модели курсов и снимка курсов.</purpose>
       <path>task1-currency-web/app/domain.py</path>
       <depends>M-T1-ERRORS</depends>
@@ -40,7 +40,7 @@
       </annotations>
     </M-T1-DOMAIN>
 
-    <M-T1-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" STATUS="planned">
+    <M-T1-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" STATUS="implemented">
       <purpose>Async HTTP-клиент к API ЦБ РФ с retry и валидацией формата.</purpose>
       <path>task1-currency-web/app/cbr_client.py</path>
       <depends>M-T1-CONFIG, M-T1-DOMAIN, M-T1-ERRORS</depends>
@@ -50,7 +50,7 @@
       </annotations>
     </M-T1-CBR-CLIENT>
 
-    <M-T1-CACHE NAME="RatesCache" TYPE="DATA_LAYER" STATUS="planned">
+    <M-T1-CACHE NAME="RatesCache" TYPE="DATA_LAYER" STATUS="implemented">
       <purpose>Async-safe TTL-кэш снимка курсов поверх CbrClient.</purpose>
       <path>task1-currency-web/app/cache.py</path>
       <depends>M-T1-CBR-CLIENT, M-T1-CONFIG</depends>
@@ -60,7 +60,7 @@
       </annotations>
     </M-T1-CACHE>
 
-    <M-T1-CONVERTER NAME="CurrencyConverter" TYPE="CORE_LOGIC" STATUS="planned">
+    <M-T1-CONVERTER NAME="CurrencyConverter" TYPE="CORE_LOGIC" STATUS="implemented">
       <purpose>Кросс-конвертация валют через рубль с учётом номинала.</purpose>
       <path>task1-currency-web/app/converter.py</path>
       <depends>M-T1-DOMAIN, M-T1-ERRORS</depends>
@@ -71,7 +71,7 @@
       </annotations>
     </M-T1-CONVERTER>
 
-    <M-T1-SCHEMAS NAME="ApiSchemas" TYPE="TYPES" STATUS="planned">
+    <M-T1-SCHEMAS NAME="ApiSchemas" TYPE="TYPES" STATUS="implemented">
       <purpose>Pydantic-схемы запросов и ответов REST API.</purpose>
       <path>task1-currency-web/app/schemas.py</path>
       <depends>none</depends>
@@ -84,7 +84,7 @@
       </annotations>
     </M-T1-SCHEMAS>
 
-    <M-T1-API NAME="ApiRoutes" TYPE="ENTRY_POINT" STATUS="planned">
+    <M-T1-API NAME="ApiRoutes" TYPE="ENTRY_POINT" STATUS="implemented">
       <purpose>HTTP-роуты конвертера: курсы, конвертация, health.</purpose>
       <path>task1-currency-web/app/api.py</path>
       <depends>M-T1-SCHEMAS, M-T1-CACHE, M-T1-CONVERTER, M-T1-ERRORS</depends>
@@ -94,7 +94,7 @@
       </annotations>
     </M-T1-API>
 
-    <M-T1-APP NAME="AppFactory" TYPE="ENTRY_POINT" STATUS="planned">
+    <M-T1-APP NAME="AppFactory" TYPE="ENTRY_POINT" STATUS="implemented">
       <purpose>Сборка FastAPI-приложения: lifespan, DI, статика.</purpose>
       <path>task1-currency-web/app/main.py</path>
       <depends>M-T1-API, M-T1-CONFIG, M-T1-CACHE, M-T1-CBR-CLIENT</depends>
@@ -105,7 +105,7 @@
       </annotations>
     </M-T1-APP>
 
-    <M-T1-FRONTEND NAME="Frontend" TYPE="UI_COMPONENT" STATUS="planned">
+    <M-T1-FRONTEND NAME="Frontend" TYPE="UI_COMPONENT" STATUS="implemented">
       <purpose>Клиентский интерфейс конвертера на HTML/CSS/JS.</purpose>
       <path>task1-currency-web/static/</path>
       <depends>none</depends>
@@ -117,7 +117,7 @@
     </M-T1-FRONTEND>
 
     <!-- ==================== TASK 2: task2-cbr-cli ==================== -->
-    <M-T2-CONFIG NAME="Config" TYPE="UTILITY" STATUS="planned">
+    <M-T2-CONFIG NAME="Config" TYPE="UTILITY" STATUS="implemented">
       <purpose>Конфигурация CLI-аналитика.</purpose>
       <path>task2-cbr-cli/cbr_cli/config.py</path>
       <depends>none</depends>
@@ -128,7 +128,7 @@
       </annotations>
     </M-T2-CONFIG>
 
-    <M-T2-ERRORS NAME="Errors" TYPE="UTILITY" STATUS="planned">
+    <M-T2-ERRORS NAME="Errors" TYPE="UTILITY" STATUS="implemented">
       <purpose>Иерархия исключений CLI-аналитика.</purpose>
       <path>task2-cbr-cli/cbr_cli/errors.py</path>
       <depends>none</depends>
@@ -140,7 +140,7 @@
       </annotations>
     </M-T2-ERRORS>
 
-    <M-T2-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" STATUS="planned">
+    <M-T2-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" STATUS="implemented">
       <purpose>Доменные модели курсов и аналитический разбор валюты.</purpose>
       <path>task2-cbr-cli/cbr_cli/domain.py</path>
       <depends>M-T2-ERRORS</depends>
@@ -152,7 +152,7 @@
       </annotations>
     </M-T2-DOMAIN>
 
-    <M-T2-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" STATUS="planned">
+    <M-T2-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" STATUS="implemented">
       <purpose>Async HTTP-клиент к API ЦБ РФ с retry и валидацией.</purpose>
       <path>task2-cbr-cli/cbr_cli/cbr_client.py</path>
       <depends>M-T2-CONFIG, M-T2-DOMAIN, M-T2-ERRORS</depends>
@@ -162,7 +162,7 @@
       </annotations>
     </M-T2-CBR-CLIENT>
 
-    <M-T2-ANALYTICS NAME="RateAnalyzer" TYPE="CORE_LOGIC" STATUS="planned">
+    <M-T2-ANALYTICS NAME="RateAnalyzer" TYPE="CORE_LOGIC" STATUS="implemented">
       <purpose>Расчёт производных значений по курсам и агрегатов.</purpose>
       <path>task2-cbr-cli/cbr_cli/analytics.py</path>
       <depends>M-T2-DOMAIN</depends>
@@ -173,7 +173,7 @@
       </annotations>
     </M-T2-ANALYTICS>
 
-    <M-T2-REPORT NAME="Reporter" TYPE="CORE_LOGIC" STATUS="planned">
+    <M-T2-REPORT NAME="Reporter" TYPE="CORE_LOGIC" STATUS="implemented">
       <purpose>Консольная таблица и экспорт результата в CSV/JSON.</purpose>
       <path>task2-cbr-cli/cbr_cli/report.py</path>
       <depends>M-T2-DOMAIN</depends>
@@ -184,7 +184,7 @@
       </annotations>
     </M-T2-REPORT>
 
-    <M-T2-CLI NAME="Cli" TYPE="ENTRY_POINT" STATUS="planned">
+    <M-T2-CLI NAME="Cli" TYPE="ENTRY_POINT" STATUS="implemented">
       <purpose>Точка входа CLI: argparse, оркестрация, exit codes.</purpose>
       <path>task2-cbr-cli/cbr_cli/__main__.py</path>
       <depends>M-T2-CONFIG, M-T2-ERRORS, M-T2-CBR-CLIENT, M-T2-ANALYTICS, M-T2-REPORT</depends>

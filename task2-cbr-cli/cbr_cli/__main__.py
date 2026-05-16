@@ -15,6 +15,8 @@
 #   run - синхронная обёртка для запуска через python -m cbr_cli
 # END_MODULE_MAP
 # START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.1 - Принудительный UTF-8 для stdout/stderr: на Windows-консоли
+#                         (cp1251) символы ₽/▲ ранее вызывали UnicodeEncodeError.
 #   LAST_CHANGE: v1.0.0 - Первичная реализация точки входа CLI.
 # END_CHANGE_SUMMARY
 """Точка входа CLI-аналитика курсов валют ЦБ РФ."""
@@ -169,15 +171,34 @@ def _configure_logging(*, verbose: bool) -> None:
     )
 
 
+def _enable_utf8_console() -> None:
+    """Перевести stdout/stderr в UTF-8.
+
+    На Windows консоль по умолчанию использует cp1251, из-за чего символы
+    вроде ₽ и ▲ роняют вывод с UnicodeEncodeError. Перенастройка потоков
+    делает CLI переносимым между ОС. В средах, где reconfigure недоступен
+    (перехваченные потоки в тестах), тихо пропускаем.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8")
+        except (ValueError, OSError):
+            pass
+
+
 # START_CONTRACT: run
 #   PURPOSE: Синхронная обёртка для запуска CLI как процесса.
 #   INPUTS: none (argv берётся из sys.argv внутри main)
 #   OUTPUTS: { int - код возврата процесса }
-#   SIDE_EFFECTS: запускает event loop через asyncio.run
+#   SIDE_EFFECTS: перенастраивает кодировку потоков; запускает event loop через asyncio.run
 #   LINKS: M-T2-CLI
 # END_CONTRACT: run
 def run() -> int:
     """Запустить CLI и вернуть код возврата."""
+    _enable_utf8_console()
     return asyncio.run(main())
 
 
