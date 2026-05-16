@@ -1,7 +1,9 @@
 /*
   FILE: task1-currency-web/static/style.css
-  VERSION: 1.0.0
+  VERSION: 1.1.0
   Стили веб-конвертера валют. Светлая тема, карточная вёрстка, один акцентный цвет.
+  v1.1.0 — селекты валют ('из'/'в') выложены вертикально: горизонтальный ряд
+           ломал карточку на узких экранах.
 */
 
 :root {
@@ -47,6 +49,7 @@ body {
 .field__label { font-size: 0.82rem; color: var(--text-muted); font-weight: 600; }
 .field__input {
   font: inherit;
+  width: 100%;
   padding: 11px 12px;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -57,9 +60,12 @@ body {
 .field__input:focus { outline: none; border-color: var(--accent); }
 
 .converter { display: flex; flex-direction: column; gap: 16px; }
-.converter__currencies { display: flex; align-items: flex-end; gap: 10px; }
+/* Селекты валют — вертикально (одна над другой), свап-кнопка между ними.
+   Горизонтальный ряд ломал карточку на узких экранах. */
+.converter__currencies { display: flex; flex-direction: column; gap: 10px; }
 
 .swap-btn {
+  align-self: center;
   flex: 0 0 auto;
   width: 42px; height: 42px;
   border: 1px solid var(--border);
@@ -117,8 +123,3 @@ body {
 
 .app__footer { text-align: center; font-size: 0.82rem; color: var(--text-muted); }
 .app__footer a { color: var(--accent); }
-
-@media (max-width: 480px) {
-  .converter__currencies { flex-direction: column; align-items: stretch; }
-  .swap-btn { align-self: center; }
-}
