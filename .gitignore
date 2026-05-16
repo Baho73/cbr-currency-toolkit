@@ -14,8 +14,9 @@ env/
 task2-cbr-cli/output/
 *.local
 
-# GRACE AFK (локальный override, если появится)
+# GRACE AFK (локальный override и журналы автономных сессий)
 .grace-afk.json
+docs/afk-sessions/
 
 # ОС / редакторы
 .DS_Store
