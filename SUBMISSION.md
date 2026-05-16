@@ -25,7 +25,7 @@ Test_26.05.16/
 
 - **Репозиторий:** <https://github.com/Baho73/cbr-currency-toolkit>
 - **Развёрнутая версия Задачи 1:** <https://converter.teamplan.ru>
-- **Google Таблица Задачи 3:** _<ссылка с доступом на просмотр после установки скрипта>_
+- **Google Таблица Задачи 3:** <https://docs.google.com/spreadsheets/d/1ldS0rPrpmf8rCEzTa66SFfWpAT6hrmVT54HX5RyuYbs/edit>
 
 > Репозиторий содержит полную историю из 32 коммитов (один коммит на модуль),
 > ветка `main`.
