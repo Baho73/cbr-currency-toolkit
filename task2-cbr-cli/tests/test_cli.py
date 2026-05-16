@@ -14,6 +14,7 @@
 #   test_no_export_flag_skips_file - --no-export: exit 0 без файла
 #   test_api_unavailable_exit_1 - недоступный API -> exit 1
 #   test_bad_response_exit_2 - некорректный ответ -> exit 2
+#   test_enable_utf8_console_is_safe - регрессия v1.0.1: перенастройка кодировки не падает
 # END_MODULE_MAP
 #
 # START_CHANGE_SUMMARY
@@ -28,7 +29,7 @@ from pathlib import Path
 import httpx
 import respx
 
-from cbr_cli.__main__ import main
+from cbr_cli.__main__ import _enable_utf8_console, main
 
 _API_URL = "https://www.cbr-xml-daily.ru/daily_json.js"
 
@@ -75,3 +76,14 @@ async def test_bad_response_exit_2() -> None:
     exit_code = await main(["--no-export"])
 
     assert exit_code == 2
+
+
+def test_enable_utf8_console_is_safe() -> None:
+    """Регрессия v1.0.1: перенастройка кодировки потоков не должна падать.
+
+    На Windows-консоли (cp1251) символы ₽/▲ ранее роняли вывод с
+    UnicodeEncodeError. _enable_utf8_console переводит stdout/stderr в UTF-8
+    и обязан безопасно отрабатывать в любой среде, включая перехваченные
+    в тестах потоки (тогда reconfigure недоступен — функция тихо пропускает).
+    """
+    _enable_utf8_console()  # не должно бросать исключений

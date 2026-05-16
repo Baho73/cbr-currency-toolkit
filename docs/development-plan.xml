@@ -74,12 +74,12 @@
     <M-T1-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" LAYER="2" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Асинхронный HTTP-клиент к API ЦБ РФ с retry, таймаутом и валидацией формата ответа.</purpose>
-        <inputs><param name="settings" type="Settings" /></inputs>
+        <inputs><param name="settings" type="Settings" /><param name="client" type="httpx.AsyncClient" /></inputs>
         <outputs><param name="snapshot" type="RatesSnapshot" /></outputs>
         <errors><error code="CbrUnavailableError" /><error code="CbrResponseError" /></errors>
       </contract>
       <interface>
-        <class-CbrClient PURPOSE="async-клиент; метод fetch_rates() возвращает RatesSnapshot; async context manager" />
+        <class-CbrClient PURPOSE="async-клиент; fetch_rates() -> RatesSnapshot; httpx.AsyncClient внедряется (DI), его жизненным циклом владеет приложение" />
       </interface>
       <depends>M-T1-CONFIG, M-T1-DOMAIN, M-T1-ERRORS</depends>
       <target><source>task1-currency-web/app/cbr_client.py</source><tests>task1-currency-web/tests/unit/test_cbr_client.py</tests></target>

@@ -233,6 +233,7 @@
         <scenario-1 kind="success">Успешный прогон с замоканным API даёт exit code 0 и файл экспорта.</scenario-1>
         <scenario-2 kind="failure">Недоступный API даёт exit code 1 и сообщение об ошибке.</scenario-2>
         <scenario-3 kind="failure">Некорректный формат ответа даёт exit code 2.</scenario-3>
+        <scenario-4 kind="regression">v1.0.1: _enable_utf8_console безопасно отрабатывает в любой среде (ранее ₽/▲ роняли вывод на Windows-консоли cp1251).</scenario-4>
       </scenarios>
       <required-log-markers><marker-1>[Cli][main][BLOCK_RUN_PIPELINE]</marker-1></required-log-markers>
       <wave-follow-up>End-to-end прогон CLI с замоканным HTTP.</wave-follow-up>
