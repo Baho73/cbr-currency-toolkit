@@ -24,3 +24,9 @@
 - rationale: grace lint после Phase-1/2 показал 18 ошибок разметки; исправлены роли, приватность logger, CHANGE_SUMMARY, MODULE_MAP
 - outcome: grace lint: 0 ошибок; остались 18 warnings — баг адаптера grace CLI на Windows с UTF-8 кириллицей (мои файлы валидны, ast.parse проходит)
 
+## 2026-05-16T19:39:26.649Z — Чекпоинт Phase-3 пройден
+- class: `checkpoint`
+- context: -
+- rationale: Task 3 (Apps Script) реализован: 4 .gs-модуля с обработкой ошибок UrlFetchApp и записью статуса; README с инструкцией установки и триггеров
+- outcome: Phase-3 -> done; автотесты в среде Apps Script недоступны — верификация ручная (заложено в плане)
+

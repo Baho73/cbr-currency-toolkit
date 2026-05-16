@@ -14,7 +14,7 @@
   <Modules>
 
     <!-- ==================== TASK 1: task1-currency-web ==================== -->
-    <M-T1-CONFIG NAME="Config" TYPE="UTILITY" LAYER="0" ORDER="1" STATUS="planned">
+    <M-T1-CONFIG NAME="Config" TYPE="UTILITY" LAYER="0" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Типизированная конфигурация веб-конвертера из переменных окружения с безопасными дефолтами.</purpose>
         <inputs><param name="env" type="environment variables" /></inputs>
@@ -32,7 +32,7 @@
       <notes><note-1>Без секретов; все поля имеют дефолты для запуска без .env.</note-1></notes>
     </M-T1-CONFIG>
 
-    <M-T1-ERRORS NAME="Errors" TYPE="UTILITY" LAYER="0" ORDER="2" STATUS="planned">
+    <M-T1-ERRORS NAME="Errors" TYPE="UTILITY" LAYER="0" ORDER="2" STATUS="implemented">
       <contract>
         <purpose>Иерархия доменных исключений конвертера для управляемой обработки ошибок.</purpose>
         <inputs><param name="message" type="str" /></inputs>
@@ -53,7 +53,7 @@
       <notes><note-1>Проверяется косвенно через тесты клиента и конвертера.</note-1></notes>
     </M-T1-ERRORS>
 
-    <M-T1-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" LAYER="1" ORDER="1" STATUS="planned">
+    <M-T1-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" LAYER="1" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Неизменяемые доменные модели курсов валют и снимка курсов на дату.</purpose>
         <inputs><param name="raw fields" type="str/float/int/datetime" /></inputs>
@@ -71,7 +71,7 @@
       <notes><note-1>RUB моделируется синтетически (rate_per_unit = 1.0, nominal = 1).</note-1></notes>
     </M-T1-DOMAIN>
 
-    <M-T1-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" LAYER="2" ORDER="1" STATUS="planned">
+    <M-T1-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" LAYER="2" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Асинхронный HTTP-клиент к API ЦБ РФ с retry, таймаутом и валидацией формата ответа.</purpose>
         <inputs><param name="settings" type="Settings" /></inputs>
@@ -88,7 +88,7 @@
       <notes><note-1>httpx.AsyncClient; retry с экспоненциальным backoff на сетевых ошибках и 5xx.</note-1></notes>
     </M-T1-CBR-CLIENT>
 
-    <M-T1-CACHE NAME="RatesCache" TYPE="DATA_LAYER" LAYER="3" ORDER="1" STATUS="planned">
+    <M-T1-CACHE NAME="RatesCache" TYPE="DATA_LAYER" LAYER="3" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Async-safe TTL-кэш снимка курсов поверх CbrClient, чтобы не дёргать API на каждый запрос.</purpose>
         <inputs><param name="client" type="CbrClient" /><param name="ttl" type="int seconds" /></inputs>
@@ -105,7 +105,7 @@
       <notes><note-1>При конкурентных запросах обновление выполняется один раз (single-flight через Lock).</note-1></notes>
     </M-T1-CACHE>
 
-    <M-T1-CONVERTER NAME="CurrencyConverter" TYPE="CORE_LOGIC" LAYER="2" ORDER="2" STATUS="planned">
+    <M-T1-CONVERTER NAME="CurrencyConverter" TYPE="CORE_LOGIC" LAYER="2" ORDER="2" STATUS="implemented">
       <contract>
         <purpose>Кросс-конвертация суммы из любой валюты в любую через рубль с учётом номинала.</purpose>
         <inputs><param name="amount" type="Decimal" /><param name="from_code" type="str" /><param name="to_code" type="str" /><param name="snapshot" type="RatesSnapshot" /></inputs>
@@ -123,7 +123,7 @@
       <notes><note-1>Decimal для денежной арифметики; округление результата до 4 знаков.</note-1></notes>
     </M-T1-CONVERTER>
 
-    <M-T1-SCHEMAS NAME="ApiSchemas" TYPE="TYPES" LAYER="0" ORDER="3" STATUS="planned">
+    <M-T1-SCHEMAS NAME="ApiSchemas" TYPE="TYPES" LAYER="0" ORDER="3" STATUS="implemented">
       <contract>
         <purpose>Pydantic-схемы запросов и ответов REST API конвертера.</purpose>
         <inputs><param name="JSON body / query" type="dict" /></inputs>
@@ -143,7 +143,7 @@
       <notes><note-1>Валидация проверяется через тесты API (422 на невалидный ввод).</note-1></notes>
     </M-T1-SCHEMAS>
 
-    <M-T1-API NAME="ApiRoutes" TYPE="ENTRY_POINT" LAYER="4" ORDER="1" STATUS="planned">
+    <M-T1-API NAME="ApiRoutes" TYPE="ENTRY_POINT" LAYER="4" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>HTTP-роуты конвертера: список курсов, конвертация, health-check.</purpose>
         <inputs><param name="HTTP request" type="Request" /></inputs>
@@ -160,7 +160,7 @@
       <notes><note-1>Доменные исключения транслируются в HTTP-коды через exception handlers.</note-1></notes>
     </M-T1-API>
 
-    <M-T1-APP NAME="AppFactory" TYPE="ENTRY_POINT" LAYER="5" ORDER="1" STATUS="planned">
+    <M-T1-APP NAME="AppFactory" TYPE="ENTRY_POINT" LAYER="5" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Сборка приложения FastAPI: lifespan, DI кэша/клиента, монтирование статики и обработчиков ошибок.</purpose>
         <inputs><param name="settings" type="Settings" /></inputs>
@@ -178,7 +178,7 @@
       <notes><note-1>Проверяется через тесты API (TestClient поднимает приложение целиком).</note-1></notes>
     </M-T1-APP>
 
-    <M-T1-FRONTEND NAME="Frontend" TYPE="UI_COMPONENT" LAYER="0" ORDER="4" STATUS="planned">
+    <M-T1-FRONTEND NAME="Frontend" TYPE="UI_COMPONENT" LAYER="0" ORDER="4" STATUS="implemented">
       <contract>
         <purpose>Клиентский интерфейс конвертера: загрузка курсов и конвертация через REST API.</purpose>
         <inputs><param name="user input" type="DOM events" /></inputs>
@@ -197,7 +197,7 @@
     </M-T1-FRONTEND>
 
     <!-- ==================== TASK 2: task2-cbr-cli ==================== -->
-    <M-T2-CONFIG NAME="Config" TYPE="UTILITY" LAYER="0" ORDER="1" STATUS="planned">
+    <M-T2-CONFIG NAME="Config" TYPE="UTILITY" LAYER="0" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Конфигурация CLI-аналитика: URL API, таймауты, retry, дефолты вывода.</purpose>
         <inputs><param name="env / defaults" type="environment" /></inputs>
@@ -215,7 +215,7 @@
       <notes><note-1>Без pydantic — лёгкий dataclass, чтобы не тащить зависимость в CLI.</note-1></notes>
     </M-T2-CONFIG>
 
-    <M-T2-ERRORS NAME="Errors" TYPE="UTILITY" LAYER="0" ORDER="2" STATUS="planned">
+    <M-T2-ERRORS NAME="Errors" TYPE="UTILITY" LAYER="0" ORDER="2" STATUS="implemented">
       <contract>
         <purpose>Иерархия исключений CLI-аналитика для управляемой обработки и корректных exit codes.</purpose>
         <inputs><param name="message" type="str" /></inputs>
@@ -234,7 +234,7 @@
       <notes><note-1>Проверяется косвенно через тесты клиента и CLI.</note-1></notes>
     </M-T2-ERRORS>
 
-    <M-T2-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" LAYER="1" ORDER="1" STATUS="planned">
+    <M-T2-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" LAYER="1" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Доменные модели курсов и результат аналитического разбора одной валюты.</purpose>
         <inputs><param name="raw fields" type="str/float/int" /></inputs>
@@ -253,7 +253,7 @@
       <notes><note-1>Модели чистые, без побочных эффектов.</note-1></notes>
     </M-T2-DOMAIN>
 
-    <M-T2-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" LAYER="2" ORDER="1" STATUS="planned">
+    <M-T2-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" LAYER="2" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Асинхронный HTTP-клиент к API ЦБ РФ с retry, таймаутом и валидацией формата.</purpose>
         <inputs><param name="settings" type="Settings" /></inputs>
@@ -270,7 +270,7 @@
       <notes><note-1>httpx.AsyncClient; экспоненциальный backoff.</note-1></notes>
     </M-T2-CBR-CLIENT>
 
-    <M-T2-ANALYTICS NAME="RateAnalyzer" TYPE="CORE_LOGIC" LAYER="2" ORDER="2" STATUS="planned">
+    <M-T2-ANALYTICS NAME="RateAnalyzer" TYPE="CORE_LOGIC" LAYER="2" ORDER="2" STATUS="implemented">
       <contract>
         <purpose>Расчёт производных значений по курсам: суточная дельта, % изменения, сортировка, топ движений, агрегаты.</purpose>
         <inputs><param name="snapshot" type="RatesSnapshot" /></inputs>
@@ -288,7 +288,7 @@
       <notes><note-1>Сортировка по убыванию модуля % изменения для топа движений.</note-1></notes>
     </M-T2-ANALYTICS>
 
-    <M-T2-REPORT NAME="Reporter" TYPE="CORE_LOGIC" LAYER="2" ORDER="3" STATUS="planned">
+    <M-T2-REPORT NAME="Reporter" TYPE="CORE_LOGIC" LAYER="2" ORDER="3" STATUS="implemented">
       <contract>
         <purpose>Форматирование результата: читаемая консольная таблица и экспорт в CSV/JSON.</purpose>
         <inputs><param name="analyses" type="list[RateAnalysis]" /><param name="summary" type="AnalysisSummary" /></inputs>
@@ -306,7 +306,7 @@
       <notes><note-1>CSV через стандартный модуль csv; JSON с ensure_ascii=False.</note-1></notes>
     </M-T2-REPORT>
 
-    <M-T2-CLI NAME="Cli" TYPE="ENTRY_POINT" LAYER="3" ORDER="1" STATUS="planned">
+    <M-T2-CLI NAME="Cli" TYPE="ENTRY_POINT" LAYER="3" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Точка входа CLI: разбор аргументов, оркестрация fetch→analyze→report, логирование, exit codes.</purpose>
         <inputs><param name="argv" type="list[str]" /></inputs>
@@ -325,7 +325,7 @@
     </M-T2-CLI>
 
     <!-- ==================== TASK 3: task3-apps-script ==================== -->
-    <M-T3-CONFIG NAME="Config" TYPE="UTILITY" LAYER="0" ORDER="1" STATUS="planned">
+    <M-T3-CONFIG NAME="Config" TYPE="UTILITY" LAYER="0" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Константы Apps Script: URL API, имя листа, заголовки столбцов, имя статус-ячейки.</purpose>
         <inputs><param name="—" type="—" /></inputs>
@@ -342,7 +342,7 @@
       <notes><note-1>Object.freeze для иммутабельности.</note-1></notes>
     </M-T3-CONFIG>
 
-    <M-T3-CBR-SERVICE NAME="CbrService" TYPE="INTEGRATION" LAYER="1" ORDER="1" STATUS="planned">
+    <M-T3-CBR-SERVICE NAME="CbrService" TYPE="INTEGRATION" LAYER="1" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Получение и парсинг курсов ЦБ РФ через UrlFetchApp с обработкой ошибок HTTP и формата.</purpose>
         <inputs><param name="CONFIG" type="object" /></inputs>
@@ -359,7 +359,7 @@
       <notes><note-1>muteHttpExceptions: true + явная проверка getResponseCode().</note-1></notes>
     </M-T3-CBR-SERVICE>
 
-    <M-T3-SHEET-WRITER NAME="SheetWriter" TYPE="DATA_LAYER" LAYER="1" ORDER="2" STATUS="planned">
+    <M-T3-SHEET-WRITER NAME="SheetWriter" TYPE="DATA_LAYER" LAYER="1" ORDER="2" STATUS="implemented">
       <contract>
         <purpose>Запись курсов в столбцы Google Таблицы и обновление ячейки статуса/ошибки.</purpose>
         <inputs><param name="sheet" type="Sheet" /><param name="rates" type="Array" /></inputs>
@@ -376,7 +376,7 @@
       <notes><note-1>Очистка старого диапазона данных перед записью; статус — отдельная ячейка.</note-1></notes>
     </M-T3-SHEET-WRITER>
 
-    <M-T3-MAIN NAME="Main" TYPE="ENTRY_POINT" LAYER="2" ORDER="1" STATUS="planned">
+    <M-T3-MAIN NAME="Main" TYPE="ENTRY_POINT" LAYER="2" ORDER="1" STATUS="implemented">
       <contract>
         <purpose>Точка входа Apps Script: меню onOpen, функция updateRates по триггеру, оркестрация и обработка ошибок.</purpose>
         <inputs><param name="trigger event" type="—" /></inputs>
@@ -434,14 +434,14 @@
   <ImplementationOrder>
     <Phase-1 name="Task 2 — async CLI-аналитик" status="done">
       <goal>Полностью рабочий асинхронный CLI с Docker, экспортом и тестами — самый изолированный проект, служит эталоном паттернов клиента/ошибок.</goal>
-      <step-1 module="M-T2-CONFIG" status="pending" verification="V-M-T2-CONFIG">Конфигурация CLI</step-1>
-      <step-2 module="M-T2-ERRORS" status="pending" verification="V-M-T2-ERRORS">Иерархия исключений</step-2>
-      <step-3 module="M-T2-DOMAIN" status="pending" verification="V-M-T2-DOMAIN">Доменные модели</step-3>
-      <step-4 module="M-T2-CBR-CLIENT" status="pending" verification="V-M-T2-CBR-CLIENT">Async HTTP-клиент с retry</step-4>
-      <step-5 module="M-T2-ANALYTICS" status="pending" verification="V-M-T2-ANALYTICS">Аналитика курсов</step-5>
-      <step-6 module="M-T2-REPORT" status="pending" verification="V-M-T2-REPORT">Консольный отчёт и экспорт</step-6>
-      <step-7 module="M-T2-CLI" status="pending" verification="V-M-T2-CLI">Точка входа CLI</step-7>
-      <step-8 status="pending" kind="packaging">Упаковка: Dockerfile, requirements.txt, README, пример вывода</step-8>
+      <step-1 module="M-T2-CONFIG" status="done" verification="V-M-T2-CONFIG">Конфигурация CLI</step-1>
+      <step-2 module="M-T2-ERRORS" status="done" verification="V-M-T2-ERRORS">Иерархия исключений</step-2>
+      <step-3 module="M-T2-DOMAIN" status="done" verification="V-M-T2-DOMAIN">Доменные модели</step-3>
+      <step-4 module="M-T2-CBR-CLIENT" status="done" verification="V-M-T2-CBR-CLIENT">Async HTTP-клиент с retry</step-4>
+      <step-5 module="M-T2-ANALYTICS" status="done" verification="V-M-T2-ANALYTICS">Аналитика курсов</step-5>
+      <step-6 module="M-T2-REPORT" status="done" verification="V-M-T2-REPORT">Консольный отчёт и экспорт</step-6>
+      <step-7 module="M-T2-CLI" status="done" verification="V-M-T2-CLI">Точка входа CLI</step-7>
+      <step-8 status="done" kind="packaging">Упаковка: Dockerfile, requirements.txt, README, пример вывода</step-8>
       <checkpoint>
         <condition>pytest task2-cbr-cli/tests — все тесты зелёные</condition>
         <condition>docker build task2-cbr-cli — успешная сборка</condition>
@@ -453,17 +453,17 @@
 
     <Phase-2 name="Task 1 — FastAPI веб-конвертер" status="done">
       <goal>Рабочий веб-конвертер с async-бэкендом, TTL-кэшем, фронтендом, Docker и тестами.</goal>
-      <step-1 module="M-T1-CONFIG" status="pending" verification="V-M-T1-CONFIG">Конфигурация веб-приложения</step-1>
-      <step-2 module="M-T1-ERRORS" status="pending" verification="V-M-T1-ERRORS">Иерархия исключений</step-2>
-      <step-3 module="M-T1-SCHEMAS" status="pending" verification="V-M-T1-SCHEMAS">Pydantic-схемы API</step-3>
-      <step-4 module="M-T1-DOMAIN" status="pending" verification="V-M-T1-DOMAIN">Доменные модели</step-4>
-      <step-5 module="M-T1-CBR-CLIENT" status="pending" verification="V-M-T1-CBR-CLIENT">Async HTTP-клиент с retry</step-5>
-      <step-6 module="M-T1-CONVERTER" status="pending" verification="V-M-T1-CONVERTER">Конвертер валют (кросс-курс)</step-6>
-      <step-7 module="M-T1-CACHE" status="pending" verification="V-M-T1-CACHE">Async TTL-кэш курсов</step-7>
-      <step-8 module="M-T1-API" status="pending" verification="V-M-T1-API">HTTP-роуты</step-8>
-      <step-9 module="M-T1-APP" status="pending" verification="V-M-T1-APP">Сборка FastAPI-приложения</step-9>
-      <step-10 module="M-T1-FRONTEND" status="pending" verification="V-M-T1-FRONTEND">Фронтенд (HTML/CSS/JS)</step-10>
-      <step-11 status="pending" kind="packaging">Упаковка: Dockerfile, requirements.txt, README, конфиг деплоя</step-11>
+      <step-1 module="M-T1-CONFIG" status="done" verification="V-M-T1-CONFIG">Конфигурация веб-приложения</step-1>
+      <step-2 module="M-T1-ERRORS" status="done" verification="V-M-T1-ERRORS">Иерархия исключений</step-2>
+      <step-3 module="M-T1-SCHEMAS" status="done" verification="V-M-T1-SCHEMAS">Pydantic-схемы API</step-3>
+      <step-4 module="M-T1-DOMAIN" status="done" verification="V-M-T1-DOMAIN">Доменные модели</step-4>
+      <step-5 module="M-T1-CBR-CLIENT" status="done" verification="V-M-T1-CBR-CLIENT">Async HTTP-клиент с retry</step-5>
+      <step-6 module="M-T1-CONVERTER" status="done" verification="V-M-T1-CONVERTER">Конвертер валют (кросс-курс)</step-6>
+      <step-7 module="M-T1-CACHE" status="done" verification="V-M-T1-CACHE">Async TTL-кэш курсов</step-7>
+      <step-8 module="M-T1-API" status="done" verification="V-M-T1-API">HTTP-роуты</step-8>
+      <step-9 module="M-T1-APP" status="done" verification="V-M-T1-APP">Сборка FastAPI-приложения</step-9>
+      <step-10 module="M-T1-FRONTEND" status="done" verification="V-M-T1-FRONTEND">Фронтенд (HTML/CSS/JS)</step-10>
+      <step-11 status="done" kind="packaging">Упаковка: Dockerfile, requirements.txt, README, конфиг деплоя</step-11>
       <checkpoint>
         <condition>pytest task1-currency-web/tests — все тесты зелёные</condition>
         <condition>docker build task1-currency-web — успешная сборка</condition>
@@ -475,11 +475,11 @@
 
     <Phase-3 name="Task 3 — Google Apps Script" status="done">
       <goal>Готовый к установке набор .gs-файлов с обработкой ошибок и инструкцией.</goal>
-      <step-1 module="M-T3-CONFIG" status="pending" verification="V-M-T3-CONFIG">Константы конфигурации</step-1>
-      <step-2 module="M-T3-CBR-SERVICE" status="pending" verification="V-M-T3-CBR-SERVICE">Сервис получения курсов (UrlFetchApp)</step-2>
-      <step-3 module="M-T3-SHEET-WRITER" status="pending" verification="V-M-T3-SHEET-WRITER">Запись в таблицу</step-3>
-      <step-4 module="M-T3-MAIN" status="pending" verification="V-M-T3-MAIN">Точка входа: меню и updateRates</step-4>
-      <step-5 status="pending" kind="packaging">README с инструкцией установки и описанием триггера</step-5>
+      <step-1 module="M-T3-CONFIG" status="done" verification="V-M-T3-CONFIG">Константы конфигурации</step-1>
+      <step-2 module="M-T3-CBR-SERVICE" status="done" verification="V-M-T3-CBR-SERVICE">Сервис получения курсов (UrlFetchApp)</step-2>
+      <step-3 module="M-T3-SHEET-WRITER" status="done" verification="V-M-T3-SHEET-WRITER">Запись в таблицу</step-3>
+      <step-4 module="M-T3-MAIN" status="done" verification="V-M-T3-MAIN">Точка входа: меню и updateRates</step-4>
+      <step-5 status="done" kind="packaging">README с инструкцией установки и описанием триггера</step-5>
       <checkpoint>
         <condition>Код всех .gs-файлов проходит ревью на корректность UrlFetchApp и обработки ошибок</condition>
         <condition>Инструкция установки полная и воспроизводимая</condition>
@@ -488,11 +488,11 @@
       </checkpoint>
     </Phase-3>
 
-    <Phase-4 name="Сдача" status="pending">
+    <Phase-4 name="Сдача" status="done">
       <goal>Единый документ сдачи и финальная проверка целостности.</goal>
-      <step-1 status="pending" kind="docs">SUBMISSION.md: пояснения по задачам, затраченное время, описание работы с Claude Code, ссылки</step-1>
-      <step-2 status="pending" kind="docs">Корневой README монорепозитория</step-2>
-      <step-3 status="pending" kind="verification">Финальная проверка: grace lint = 0, все тесты зелёные, git-история чистая</step-3>
+      <step-1 status="done" kind="docs">SUBMISSION.md: пояснения по задачам, затраченное время, описание работы с Claude Code, ссылки</step-1>
+      <step-2 status="done" kind="docs">Корневой README монорепозитория</step-2>
+      <step-3 status="done" kind="verification">Финальная проверка: grace lint = 0, все тесты зелёные, git-история чистая</step-3>
       <checkpoint>
         <condition>grace lint --path . завершается с кодом 0</condition>
         <condition>pytest по обоим Python-проектам зелёный</condition>
