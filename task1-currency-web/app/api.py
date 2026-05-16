@@ -26,7 +26,7 @@ from fastapi import APIRouter, Request
 from app.domain import RatesSnapshot
 from app.schemas import ConvertRequest, ConvertResponse, RateItem, RatesResponse
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 # START_CONTRACT: build_router
@@ -63,7 +63,7 @@ def build_router() -> APIRouter:
         result = request.app.state.converter.convert(
             body.amount, body.from_code, body.to_code, snapshot
         )
-        logger.info(
+        _logger.info(
             "[ApiRoutes][handle_convert][BLOCK_HANDLE_CONVERT] %s %s -> %s = %s",
             body.amount, result.from_code, result.to_code, result.result,
         )

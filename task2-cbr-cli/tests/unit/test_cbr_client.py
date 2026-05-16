@@ -17,6 +17,10 @@
 #   test_missing_valute_raises_response_error - нет 'Valute' -> CbrResponseError
 #   test_timeout_raises_unavailable - таймаут -> CbrUnavailableError
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Тесты async HTTP-клиента API ЦБ РФ."""
 
 from __future__ import annotations

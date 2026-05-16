@@ -13,6 +13,10 @@
 #   sample_payload - сырое тело ответа API с предсказуемыми курсами
 #   sample_snapshot - разобранный RatesSnapshot
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Общие тестовые фикстуры веб-конвертера."""
 
 from __future__ import annotations

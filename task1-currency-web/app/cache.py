@@ -28,7 +28,7 @@ from typing import Protocol
 
 from app.domain import RatesSnapshot
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 class RatesSource(Protocol):
@@ -75,12 +75,12 @@ class RatesCache:
         # холодном кэше дождутся первого и получат уже свежий снимок.
         async with self._lock:
             if self._snapshot is not None and not self._is_stale():
-                logger.debug(
+                _logger.debug(
                     "[RatesCache][get_snapshot][BLOCK_REFRESH_IF_STALE] отдан кэш"
                 )
                 return self._snapshot
 
-            logger.info(
+            _logger.info(
                 "[RatesCache][get_snapshot][BLOCK_REFRESH_IF_STALE] обновление курсов"
             )
             snapshot = await self._source.fetch_rates()

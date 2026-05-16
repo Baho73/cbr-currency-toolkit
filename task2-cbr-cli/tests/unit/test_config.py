@@ -14,6 +14,10 @@
 #   test_env_overrides - переменные окружения переопределяют дефолты
 #   test_invalid_env_falls_back - мусорные значения откатываются к дефолтам
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Тесты конфигурации CLI-аналитика."""
 
 from cbr_cli.config import (

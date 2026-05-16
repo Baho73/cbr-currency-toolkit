@@ -12,6 +12,10 @@
 # START_MODULE_MAP
 #   __version__ - версия CLI-утилиты
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Асинхронный CLI-аналитик курсов валют ЦБ РФ."""
 
 __version__ = "1.0.0"

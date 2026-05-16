@@ -12,6 +12,10 @@
 # START_MODULE_MAP
 #   __version__ - версия веб-приложения
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Веб-конвертер валют по курсам ЦБ РФ (FastAPI + асинхронный бэкенд)."""
 
 __version__ = "1.0.0"

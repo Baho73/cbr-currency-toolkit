@@ -10,6 +10,7 @@
 # END_MODULE_CONTRACT
 #
 # START_MODULE_MAP
+#   RUB_CODE - код опорной валюты (рубль)
 #   Currency - frozen-модель курса валюты; свойства rate_per_unit, delta_abs, delta_pct
 #   RatesSnapshot - frozen-модель снимка курсов; парсер from_api_payload; поиск get
 # END_MODULE_MAP

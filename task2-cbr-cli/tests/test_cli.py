@@ -15,6 +15,10 @@
 #   test_api_unavailable_exit_1 - недоступный API -> exit 1
 #   test_bad_response_exit_2 - некорректный ответ -> exit 2
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """End-to-end тесты CLI-аналитика."""
 
 from __future__ import annotations

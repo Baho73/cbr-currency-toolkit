@@ -15,6 +15,10 @@
 #   test_json_export_valid - JSON пишется валидным и с кириллицей
 #   test_unknown_format_rejected - неизвестный формат -> ValueError
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Тесты отчёта и экспорта результатов аналитики."""
 
 from __future__ import annotations

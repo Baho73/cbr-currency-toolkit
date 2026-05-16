@@ -27,7 +27,7 @@ from decimal import Decimal
 from app.domain import RatesSnapshot
 from app.errors import ConversionError
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 # Точность округления: результат — до копеек×100, курс — до 6 знаков.
 _RESULT_QUANT = Decimal("0.0001")
@@ -86,7 +86,7 @@ class CurrencyConverter:
         result = amount_dec * effective_rate
         # END_BLOCK_CROSS_RATE
 
-        logger.info(
+        _logger.info(
             "[CurrencyConverter][convert][BLOCK_CROSS_RATE] %s %s -> %s, курс %s",
             amount, from_currency.code, to_currency.code, effective_rate,
         )

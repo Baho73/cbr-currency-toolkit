@@ -29,7 +29,7 @@ from pathlib import Path
 from cbr_cli.analytics import AnalysisSummary
 from cbr_cli.domain import RateAnalysis
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 # Текстовые маркеры направления — устойчивы к любой кодировке консоли.
 _DIRECTION_MARK = {"up": "▲", "down": "▼", "flat": "—"}
@@ -125,7 +125,7 @@ class FileExporter:
             self._write_csv(analyses, path)
         else:
             self._write_json(analyses, path)
-        logger.info(
+        _logger.info(
             "[Reporter][export][BLOCK_WRITE_FILE] записано %d валют в %s (%s)",
             len(analyses),
             path,

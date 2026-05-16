@@ -16,6 +16,10 @@
 #   test_currency_with_nominal - валюта с номиналом > 1 (JPY)
 #   test_same_currency / test_unknown_currency / test_non_positive_amount
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Тесты конвертера валют."""
 
 from __future__ import annotations

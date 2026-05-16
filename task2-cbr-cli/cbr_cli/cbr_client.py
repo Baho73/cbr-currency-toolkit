@@ -30,7 +30,7 @@ from cbr_cli.config import Settings
 from cbr_cli.domain import RatesSnapshot
 from cbr_cli.errors import CbrResponseError, CbrUnavailableError
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 # 5xx считаем временными сбоями сервера — их имеет смысл повторять.
 _RETRYABLE_STATUS_FLOOR = 500
@@ -90,7 +90,7 @@ class CbrClient:
             except (httpx.TimeoutException, httpx.TransportError) as exc:
                 # Сетевой сбой или таймаут — кандидат на повтор.
                 last_error = exc
-                logger.warning(
+                _logger.warning(
                     "[CbrClient][fetch_rates][BLOCK_FETCH_WITH_RETRY] "
                     "сетевая ошибка, попытка %d/%d: %s",
                     attempt,
@@ -105,7 +105,7 @@ class CbrClient:
                 last_error = CbrUnavailableError(
                     f"API вернул статус {response.status_code}"
                 )
-                logger.warning(
+                _logger.warning(
                     "[CbrClient][fetch_rates][BLOCK_FETCH_WITH_RETRY] "
                     "статус %d, попытка %d/%d",
                     response.status_code,
@@ -121,7 +121,7 @@ class CbrClient:
                     f"API вернул клиентскую ошибку {response.status_code}"
                 )
 
-            logger.info(
+            _logger.info(
                 "[CbrClient][fetch_rates][BLOCK_FETCH_WITH_RETRY] "
                 "успешный ответ с попытки %d/%d",
                 attempt,

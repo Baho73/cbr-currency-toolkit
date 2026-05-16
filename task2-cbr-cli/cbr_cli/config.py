@@ -10,6 +10,10 @@
 # END_MODULE_CONTRACT
 #
 # START_MODULE_MAP
+#   DEFAULT_API_URL - дефолтный URL API ЦБ РФ
+#   DEFAULT_HTTP_TIMEOUT - дефолтный таймаут HTTP-запроса
+#   DEFAULT_RETRY_ATTEMPTS - дефолтное число попыток запроса
+#   DEFAULT_RETRY_BACKOFF - дефолтная база экспоненциального backoff
 #   Settings - неизменяемая конфигурация (URL API, таймауты, retry)
 #   load_settings - сборка Settings из переменных окружения
 # END_MODULE_MAP

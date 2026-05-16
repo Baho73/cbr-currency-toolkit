@@ -14,6 +14,10 @@
 #   test_env_overrides - переменные окружения переопределяют дефолты
 #   test_get_settings_is_cached - get_settings возвращает один и тот же объект
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Тесты конфигурации веб-конвертера."""
 
 from __future__ import annotations

@@ -15,6 +15,10 @@
 #   test_convert_validation_422 / test_convert_unknown_currency_400
 #   test_api_unavailable_502
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Интеграционные тесты HTTP-API веб-конвертера."""
 
 from __future__ import annotations

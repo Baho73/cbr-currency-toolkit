@@ -40,7 +40,7 @@ from cbr_cli.config import (
 from cbr_cli.errors import EXIT_CODES, CbrError
 from cbr_cli.report import ConsoleReporter, FileExporter
 
-logger = logging.getLogger("cbr_cli")
+_logger = logging.getLogger("cbr_cli")
 
 _GENERIC_ERROR_EXIT = 3
 _DEFAULT_TOP = 5
@@ -103,7 +103,7 @@ async def main(argv: list[str] | None = None) -> int:
     _configure_logging(verbose=args.verbose)
 
     settings = load_settings()
-    logger.debug(
+    _logger.debug(
         "[Cli][main][BLOCK_RUN_PIPELINE] retry=%d backoff=%.2f",
         DEFAULT_RETRY_ATTEMPTS,
         DEFAULT_RETRY_BACKOFF,
@@ -128,15 +128,15 @@ async def main(argv: list[str] | None = None) -> int:
     except CbrError as exc:
         # Ожидаемый сбой интеграции — понятное сообщение и код из таблицы.
         exit_code = EXIT_CODES.get(type(exc), _GENERIC_ERROR_EXIT)
-        logger.error("[Cli][main][BLOCK_RUN_PIPELINE] сбой интеграции: %s", exc)
+        _logger.error("[Cli][main][BLOCK_RUN_PIPELINE] сбой интеграции: %s", exc)
         print(f"Ошибка: {exc}", file=sys.stderr)
         return exit_code
     except Exception as exc:  # noqa: BLE001 - граница процесса: ловим всё, чтобы не падать traceback'ом
-        logger.exception("[Cli][main][BLOCK_RUN_PIPELINE] непредвиденная ошибка")
+        _logger.exception("[Cli][main][BLOCK_RUN_PIPELINE] непредвиденная ошибка")
         print(f"Непредвиденная ошибка: {exc}", file=sys.stderr)
         return _GENERIC_ERROR_EXIT
 
-    logger.info("[Cli][main][BLOCK_RUN_PIPELINE] пайплайн завершён успешно")
+    _logger.info("[Cli][main][BLOCK_RUN_PIPELINE] пайплайн завершён успешно")
     return 0
 
 

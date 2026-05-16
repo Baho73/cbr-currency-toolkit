@@ -5,8 +5,8 @@
 //   SCOPE: Класс ApiClient (обёртка fetch) и ConverterController (связывание DOM, рендер).
 //   DEPENDS: M-T1-API
 //   LINKS: M-T1-FRONTEND
-//   ROLE: UI_COMPONENT
-//   MAP_MODE: EXPORTS
+//   ROLE: SCRIPT
+//   MAP_MODE: NONE
 // END_MODULE_CONTRACT
 //
 // START_MODULE_MAP

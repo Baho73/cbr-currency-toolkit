@@ -25,7 +25,7 @@ from dataclasses import dataclass
 
 from cbr_cli.domain import Currency, RateAnalysis, RatesSnapshot
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 # Порог, ниже которого изменение считается отсутствующим (защита от шума float).
 _FLAT_EPSILON = 1e-9
@@ -62,7 +62,7 @@ class RateAnalyzer:
 
         # START_BLOCK_COMPUTE_DELTAS
         analyses = [self._analyze_one(currency) for currency in self._snapshot]
-        logger.info(
+        _logger.info(
             "[RateAnalyzer][analyze][BLOCK_COMPUTE_DELTAS] разобрано валют: %d",
             len(analyses),
         )

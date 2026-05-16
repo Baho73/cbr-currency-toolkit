@@ -29,7 +29,7 @@ from app.config import Settings
 from app.domain import RatesSnapshot
 from app.errors import CbrResponseError, CbrUnavailableError
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 _RETRYABLE_STATUS_FLOOR = 500
 
@@ -68,7 +68,7 @@ class CbrClient:
                 response = await self._client.get(self._settings.cbr_api_url)
             except (httpx.TimeoutException, httpx.TransportError) as exc:
                 last_error = exc
-                logger.warning(
+                _logger.warning(
                     "[CbrClient][fetch_rates][BLOCK_FETCH_WITH_RETRY] "
                     "сетевая ошибка, попытка %d/%d: %s",
                     attempt, attempts, exc,
@@ -80,7 +80,7 @@ class CbrClient:
                 last_error = CbrUnavailableError(
                     f"API вернул статус {response.status_code}"
                 )
-                logger.warning(
+                _logger.warning(
                     "[CbrClient][fetch_rates][BLOCK_FETCH_WITH_RETRY] "
                     "статус %d, попытка %d/%d",
                     response.status_code, attempt, attempts,
@@ -93,7 +93,7 @@ class CbrClient:
                     f"API вернул клиентскую ошибку {response.status_code}"
                 )
 
-            logger.info(
+            _logger.info(
                 "[CbrClient][fetch_rates][BLOCK_FETCH_WITH_RETRY] "
                 "успешный ответ с попытки %d/%d",
                 attempt, attempts,

@@ -16,6 +16,10 @@
 #   test_summary_aggregates - агрегаты сводки корректны
 #   test_zero_previous_does_not_crash - previous = 0 не валит расчёт
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Тесты аналитики курсов валют."""
 
 from __future__ import annotations

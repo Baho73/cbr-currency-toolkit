@@ -16,6 +16,10 @@
 #   test_get_unknown_raises - неизвестный код -> UnknownCurrencyError
 #   test_rejects_* - битые структуры дают CbrResponseError
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Тесты доменных моделей веб-конвертера."""
 
 from __future__ import annotations

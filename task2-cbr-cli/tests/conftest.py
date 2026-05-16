@@ -13,6 +13,10 @@
 #   sample_payload - сырое тело ответа API (dict) с предсказуемыми курсами
 #   sample_snapshot - разобранный RatesSnapshot на основе sample_payload
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Общие тестовые фикстуры CLI-аналитика."""
 
 from __future__ import annotations

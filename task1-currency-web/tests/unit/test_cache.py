@@ -14,6 +14,10 @@
 #   MutableClock - управляемые часы для проверки TTL
 #   test_caches_within_ttl / test_refreshes_after_ttl / test_single_flight
 # END_MODULE_MAP
+#
+# START_CHANGE_SUMMARY
+#   LAST_CHANGE: v1.0.0 - Первичная реализация.
+# END_CHANGE_SUMMARY
 """Тесты async TTL-кэша курсов валют."""
 
 from __future__ import annotations

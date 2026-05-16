@@ -5,7 +5,7 @@
 #   SCOPE: Фабрика create_app и ASGI-инстанс app для uvicorn.
 #   DEPENDS: M-T1-API, M-T1-CONFIG, M-T1-CACHE, M-T1-CBR-CLIENT
 #   LINKS: M-T1-APP
-#   ROLE: ENTRY_POINT
+#   ROLE: RUNTIME
 #   MAP_MODE: EXPORTS
 # END_MODULE_CONTRACT
 #
@@ -37,7 +37,7 @@ from app.config import Settings, get_settings
 from app.converter import CurrencyConverter
 from app.errors import CbrError, ConversionError
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 # Статика лежит рядом с пакетом app/ — каталог static/ в корне проекта.
 _STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -62,12 +62,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         cbr_client = CbrClient(resolved, http_client)
         application.state.cache = RatesCache(cbr_client, resolved.cache_ttl_seconds)
         application.state.converter = CurrencyConverter()
-        logger.info("[AppFactory][lifespan][BLOCK_LIFESPAN] приложение инициализировано")
+        _logger.info("[AppFactory][lifespan][BLOCK_LIFESPAN] приложение инициализировано")
         try:
             yield
         finally:
             await http_client.aclose()
-            logger.info("[AppFactory][lifespan][BLOCK_LIFESPAN] ресурсы освобождены")
+            _logger.info("[AppFactory][lifespan][BLOCK_LIFESPAN] ресурсы освобождены")
         # END_BLOCK_LIFESPAN
 
     application = FastAPI(
@@ -92,7 +92,7 @@ def _register_exception_handlers(application: FastAPI) -> None:
 
     async def handle_cbr_error(_: Request, exc: Exception) -> JSONResponse:
         # Сбой внешнего API -> 502 Bad Gateway.
-        logger.warning("[AppFactory][handle_cbr_error] %s", exc)
+        _logger.warning("[AppFactory][handle_cbr_error] %s", exc)
         return JSONResponse(status_code=502, content={"detail": str(exc)})
 
     async def handle_conversion_error(_: Request, exc: Exception) -> JSONResponse:
