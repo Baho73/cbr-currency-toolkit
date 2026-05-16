@@ -1,0 +1,28 @@
+<DevelopmentPlan VERSION="0.2.0">
+  <ArchitectureNotes>
+    <objective>Три независимых самодостаточных проекта вокруг API курсов валют ЦБ РФ; каждый запускается и проверяется изолированно.</objective>
+    <objective>Демонстрация устойчивого продакшн-кода: ООП, асинхронность, иерархия исключений, retry/timeout, типизация, тесты.</objective>
+    <non-goal>Кросс-задачное переиспользование кода (вариант A архитектуры — независимые проекты).</non-goal>
+    <risk-1>Внешний API может вернуть не-JSON или изменить структуру — строгий парсинг и валидация обязательны.</risk-1>
+  </ArchitectureNotes>
+
+  <Modules>
+    <!-- Модули, контракты, интерфейсы и порядок реализации заполняются скиллом grace-plan.
+         <M-xxx NAME="..." TYPE="..." LAYER="N" ORDER="N" STATUS="planned"> ... </M-xxx>
+    -->
+  </Modules>
+
+  <DataFlow>
+    <!-- Потоки данных (DF-RATES, DF-CONVERT, DF-ANALYZE, DF-SHEET) детализируются скиллом grace-plan. -->
+  </DataFlow>
+
+  <ImplementationOrder>
+    <!-- Фазы и шаги заполняются скиллом grace-plan. -->
+  </ImplementationOrder>
+
+  <ExecutionPolicy>
+    <default-profile>balanced</default-profile>
+    <controller-owns>docs/development-plan.xml, docs/knowledge-graph.xml, docs/verification-plan.xml</controller-owns>
+    <worker-owns>Только исходные файлы модулей и модуль-локальные тесты внутри утверждённого write scope.</worker-owns>
+  </ExecutionPolicy>
+</DevelopmentPlan>

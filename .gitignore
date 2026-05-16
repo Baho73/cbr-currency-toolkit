@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Тестовое окружение / артефакты запуска
+*.log
+task2-cbr-cli/output/
+*.local
+
+# GRACE AFK (локальный override, если появится)
+.grace-afk.json
+
+# ОС / редакторы
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Claude Code
+.claude/settings.local.json

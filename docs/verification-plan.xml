@@ -1,0 +1,29 @@
+<VerificationPlan VERSION="0.2.0">
+  <GlobalPolicy>
+    <log-format>[Module][function][BLOCK_NAME] message</log-format>
+    <deterministic-first>true</deterministic-first>
+    <module-level-focus>Быстрые детерминированные unit-проверки модуля с замоканным HTTP (respx).</module-level-focus>
+    <wave-level-focus>Проверка собранных поверхностей внутри одного проекта (API-роуты, CLI end-to-end).</wave-level-focus>
+    <phase-level-focus>Полная регрессия по Python-проектам плюс grace lint.</phase-level-focus>
+    <redaction>Не логировать секреты, токены и сырые высокорисковые payload.</redaction>
+    <manual-note>Task 3 (Google Apps Script) проверяется вручную в Google Таблице — автотесты недоступны в среде Apps Script.</manual-note>
+  </GlobalPolicy>
+
+  <CriticalFlows>
+    <!-- Критические верификационные потоки (VF-*) заполняются скиллом grace-plan. -->
+  </CriticalFlows>
+
+  <ModuleVerification>
+    <!-- Помодульные контракты верификации (V-M-*) заполняются скиллом grace-plan. -->
+  </ModuleVerification>
+
+  <PhaseGates>
+    <!-- Фазовые гейты заполняются скиллом grace-plan. -->
+  </PhaseGates>
+
+  <FailurePackets>
+    <packet-template>
+      <expected-fields>scenario, expected-evidence, observed-evidence, first-divergent-block, next-action</expected-fields>
+    </packet-template>
+  </FailurePackets>
+</VerificationPlan>

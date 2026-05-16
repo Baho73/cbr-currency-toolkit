@@ -1,0 +1,133 @@
+<RequirementsAnalysis VERSION="0.2.0">
+  <Project>
+    <name>Тестовое задание: утилиты курсов валют ЦБ РФ</name>
+    <annotation>Монорепозиторий из трёх независимых самодостаточных утилит вокруг публичного API курсов валют ЦБ РФ (cbr-xml-daily.ru): веб-конвертер валют на FastAPI с асинхронным HTTP-клиентом и TTL-кэшем, асинхронный CLI-аналитик курсов с экспортом результата и Docker, и Google Apps Script для выгрузки курсов в Google Таблицу по триггеру. Каждый проект запускается и проверяется изолированно.</annotation>
+    <keywords>курсы валют, ЦБ РФ, cbr-xml-daily, конвертер валют, FastAPI, async, httpx, asyncio, Docker, Google Apps Script, UrlFetchApp, REST API, retry, TTL-кэш</keywords>
+  </Project>
+
+  <Actors>
+    <actor-User>Конечный пользователь: открывает веб-конвертер, вводит сумму и валюты, получает результат.</actor-User>
+    <actor-Analyst>Аналитик/оператор: запускает CLI-скрипт, получает структурированный отчёт по курсам и экспорт в файл.</actor-Analyst>
+    <actor-SheetOwner>Владелец Google Таблицы: нажимает кнопку меню или ждёт срабатывания триггера, видит обновлённые курсы в таблице.</actor-SheetOwner>
+    <actor-System>Автоматический актор: триггер Apps Script по расписанию, фоновое обновление TTL-кэша.</actor-System>
+  </Actors>
+
+  <UseCases>
+    <!-- ===== Задача 1: веб-конвертер валют ===== -->
+    <UC-101>
+      <Actor>User</Actor>
+      <Action>Открывает веб-страницу конвертера и запрашивает список доступных валют</Action>
+      <Goal>Увидеть актуальные курсы валют ЦБ РФ с суточной динамикой</Goal>
+      <Preconditions>FastAPI-сервис запущен; API ЦБ РФ доступен ИЛИ есть валидный кэш</Preconditions>
+      <AcceptanceCriteria>Эндпоинт GET /api/rates возвращает список валют с полями code, name, value, nominal, delta; фронтенд отображает их</AcceptanceCriteria>
+      <Priority>high</Priority>
+      <RelatedFlows>DF-RATES</RelatedFlows>
+    </UC-101>
+    <UC-102>
+      <Actor>User</Actor>
+      <Action>Вводит сумму, исходную и целевую валюту, запускает конвертацию</Action>
+      <Goal>Получить корректно пересчитанную сумму по кросс-курсу через рубль</Goal>
+      <Preconditions>Курсы загружены; обе валюты присутствуют в снимке курсов</Preconditions>
+      <AcceptanceCriteria>POST /api/convert возвращает результат с учётом номинала обеих валют; конвертация RUB↔X и X↔Y математически верна</AcceptanceCriteria>
+      <Priority>high</Priority>
+      <RelatedFlows>DF-CONVERT</RelatedFlows>
+    </UC-102>
+    <UC-103>
+      <Actor>System</Actor>
+      <Action>Повторно запрашивает курсы при истечении TTL-кэша</Action>
+      <Goal>Не нагружать внешний API лишними запросами (ЦБ обновляет курс раз в сутки)</Goal>
+      <Preconditions>Кэш инициализирован</Preconditions>
+      <AcceptanceCriteria>В пределах TTL внешний HTTP-запрос не выполняется; по истечении TTL — выполняется один раз</AcceptanceCriteria>
+      <Priority>medium</Priority>
+      <RelatedFlows>DF-RATES</RelatedFlows>
+    </UC-103>
+
+    <!-- ===== Задача 2: async CLI-аналитик ===== -->
+    <UC-201>
+      <Actor>Analyst</Actor>
+      <Action>Запускает CLI-скрипт (локально или в Docker-контейнере)</Action>
+      <Goal>Получить структурированный отчёт по курсам валют с производными значениями</Goal>
+      <Preconditions>Установлены зависимости ИЛИ собран Docker-образ; API ЦБ РФ доступен</Preconditions>
+      <AcceptanceCriteria>Скрипт выводит читаемую таблицу с курсами, суточной дельтой и % изменения; выводит топ движений</AcceptanceCriteria>
+      <Priority>high</Priority>
+      <RelatedFlows>DF-ANALYZE</RelatedFlows>
+    </UC-201>
+    <UC-202>
+      <Actor>Analyst</Actor>
+      <Action>Запускает скрипт с флагом экспорта в CSV или JSON</Action>
+      <Goal>Сохранить обработанные данные в файл для дальнейшего анализа</Goal>
+      <Preconditions>Каталог вывода доступен для записи</Preconditions>
+      <AcceptanceCriteria>Создаётся валидный CSV/JSON-файл с обработанными данными; путь к файлу печатается в консоль</AcceptanceCriteria>
+      <Priority>high</Priority>
+      <RelatedFlows>DF-ANALYZE</RelatedFlows>
+    </UC-202>
+    <UC-203>
+      <Actor>Analyst</Actor>
+      <Action>Запускает скрипт при недоступном API или некорректном ответе</Action>
+      <Goal>Получить понятное сообщение об ошибке без аварийного traceback</Goal>
+      <Preconditions>API недоступен / возвращает некорректный JSON</Preconditions>
+      <AcceptanceCriteria>Скрипт логирует ошибку, печатает осмысленное сообщение и завершается с ненулевым exit code</AcceptanceCriteria>
+      <Priority>high</Priority>
+      <RelatedFlows>DF-ANALYZE</RelatedFlows>
+    </UC-203>
+
+    <!-- ===== Задача 3: Google Apps Script ===== -->
+    <UC-301>
+      <Actor>SheetOwner</Actor>
+      <Action>Выбирает в кастомном меню таблицы пункт «Обновить курсы»</Action>
+      <Goal>Записать актуальные курсы валют ЦБ РФ в столбцы таблицы</Goal>
+      <Preconditions>Скрипт привязан к таблице; есть доступ к интернету из Apps Script</Preconditions>
+      <AcceptanceCriteria>Курсы записываются в структурированном виде по столбцам; ячейка статуса показывает успех и время обновления</AcceptanceCriteria>
+      <Priority>high</Priority>
+      <RelatedFlows>DF-SHEET</RelatedFlows>
+    </UC-301>
+    <UC-302>
+      <Actor>System</Actor>
+      <Action>Срабатывает time-driven триггер обновления курсов раз в сутки</Action>
+      <Goal>Поддерживать таблицу в актуальном состоянии без ручного вмешательства</Goal>
+      <Preconditions>Триггер по расписанию установлен</Preconditions>
+      <AcceptanceCriteria>Та же функция обновления вызывается автоматически; результат идентичен ручному запуску</AcceptanceCriteria>
+      <Priority>medium</Priority>
+      <RelatedFlows>DF-SHEET</RelatedFlows>
+    </UC-302>
+    <UC-303>
+      <Actor>SheetOwner</Actor>
+      <Action>Запускает обновление при недоступном API или некорректном ответе</Action>
+      <Goal>Увидеть статус ошибки в таблице, а не пустые/битые данные</Goal>
+      <Preconditions>API недоступен / код ответа не 200 / JSON некорректен</Preconditions>
+      <AcceptanceCriteria>В ячейку статуса записывается текст ошибки и время; ранее записанные данные не затираются мусором</AcceptanceCriteria>
+      <Priority>high</Priority>
+      <RelatedFlows>DF-SHEET</RelatedFlows>
+    </UC-303>
+  </UseCases>
+
+  <NonGoals>
+    <item-1>Нет кросс-задачного переиспользования кода: Task 1, Task 2, Task 3 — три независимых проекта (решение по архитектуре, вариант A).</item-1>
+    <item-2>Нет авторизации/учётных записей пользователей в веб-конвертере.</item-2>
+    <item-3>Нет исторических графиков курсов — только текущий снимок и суточная дельта (поле Previous из API).</item-3>
+    <item-4>Нет собственной базы данных; единственный источник данных — внешний API ЦБ РФ.</item-4>
+    <item-5>Нет поддержки нескольких источников курсов — только cbr-xml-daily.ru.</item-5>
+  </NonGoals>
+
+  <Constraints>
+    <constraint-1>Внешний API: https://www.cbr-xml-daily.ru/daily_json.js — публичный, без авторизации, JSON.</constraint-1>
+    <constraint-2>Каждый проект (task1/task2/task3) должен запускаться и проверяться изолированно — без зависимости от соседних папок.</constraint-2>
+    <constraint-3>Task 1 и Task 2 — Python 3.12, асинхронный ввод-вывод (httpx.AsyncClient).</constraint-3>
+    <constraint-4>Task 3 — Google Apps Script, runtime V8, HTTP только через UrlFetchApp.</constraint-4>
+    <constraint-5>Все сетевые вызовы обязаны иметь таймаут и retry с экспоненциальным backoff.</constraint-5>
+    <constraint-6>Обработка ошибок через иерархию исключений, без «голых» except Exception на критических путях.</constraint-6>
+    <constraint-7>Секреты и токены не логируются (для данного API секретов нет, правило сохраняется как конвенция).</constraint-7>
+  </Constraints>
+
+  <Risks>
+    <risk-1>Внешний API может быть временно недоступен или вернуть HTML/ошибку вместо JSON — нужна валидация формата ответа.</risk-1>
+    <risk-2>Структура ответа API может измениться (отсутствие ключа Valute, поля Value) — нужен строгий парсинг с понятной ошибкой.</risk-2>
+    <risk-3>Apps Script имеет лимит времени выполнения и квоты UrlFetchApp — обновление должно быть быстрым и идемпотентным.</risk-3>
+    <risk-4>Конвертация через рубль с номиналом — частый источник арифметических ошибок; нужны прицельные тесты.</risk-4>
+    <risk-5>FastAPI-деплой требует постоянно работающего процесса (не статический хостинг) — деплой на Render/локально через Docker.</risk-5>
+  </Risks>
+
+  <OpenQuestions>
+    <question-1>Платформа публичного деплоя Task 1 (Render / Railway / Fly.io) — уточняется на этапе финальной сдачи; локальный Docker-запуск гарантирован в любом случае.</question-1>
+  </OpenQuestions>
+</RequirementsAnalysis>

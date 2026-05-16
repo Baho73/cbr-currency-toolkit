@@ -1,0 +1,66 @@
+<TechnologyStack VERSION="0.2.0">
+  <Runtime>CPython 3.12 (Task 1, Task 2); Google Apps Script V8 (Task 3)</Runtime>
+  <Language>Python 3.12 (Task 1, Task 2); JavaScript ES2022 / Apps Script V8 (Task 3)</Language>
+  <Framework>FastAPI 0.115.x (Task 1); standard library + argparse (Task 2); Google Apps Script API (Task 3)</Framework>
+
+  <Dependencies>
+    <!-- ===== Task 1: task1-currency-web ===== -->
+    <dep name="fastapi" version="0.115.*" purpose="Асинхронный веб-фреймворк: REST API конвертера" />
+    <dep name="uvicorn[standard]" version="0.32.*" purpose="ASGI-сервер для запуска FastAPI" />
+    <dep name="httpx" version="0.27.*" purpose="Асинхронный HTTP-клиент к API ЦБ РФ" />
+    <dep name="pydantic" version="2.*" purpose="Валидация и сериализация моделей запросов/ответов" />
+    <dep name="pydantic-settings" version="2.*" purpose="Типизированная конфигурация из переменных окружения" />
+    <!-- ===== Task 2: task2-cbr-cli ===== -->
+    <dep name="httpx" version="0.27.*" purpose="Асинхронный HTTP-клиент к API ЦБ РФ (Task 2)" />
+    <!-- ===== Тестирование (Task 1 и Task 2) ===== -->
+    <dep name="pytest" version="8.*" purpose="Тест-раннер" />
+    <dep name="pytest-asyncio" version="0.24.*" purpose="Поддержка async-тестов" />
+    <dep name="respx" version="0.21.*" purpose="Мокирование httpx-запросов в тестах" />
+  </Dependencies>
+
+  <VersionConstraints>
+    <constraint lib="python" min="3.12.0" max="3.12.x" reason="Используются современные type hints и asyncio API" />
+    <constraint lib="fastapi" min="0.115.0" max="0.115.x" reason="Стабильная ветка с актуальным lifespan API" />
+    <constraint lib="pydantic" min="2.0.0" max="2.x" reason="Код рассчитан на Pydantic v2 (model_validate, BaseSettings вынесен в pydantic-settings)" />
+  </VersionConstraints>
+
+  <Tooling>
+    <tool name="package-manager" value="pip + venv" version="bundled" />
+    <tool name="container" value="docker" version="24.x+" />
+    <tool name="test-runner" value="pytest" version="8.x" />
+    <tool name="grace-cli" value="grace" version="3.7.0" />
+    <tool name="apps-script-runtime" value="V8" version="current" />
+  </Tooling>
+
+  <Testing>
+    <module-level>
+      <command>pytest task1-currency-web/tests/unit -q</command>
+      <command>pytest task2-cbr-cli/tests/unit -q</command>
+      <focus>Быстрые детерминированные unit- и контрактные проверки модулей с замоканным HTTP (respx)</focus>
+    </module-level>
+    <wave-level>
+      <command>pytest task1-currency-web/tests -q</command>
+      <command>pytest task2-cbr-cli/tests -q</command>
+      <focus>Проверка собранных поверхностей внутри одного проекта (API-роуты, CLI end-to-end с моками)</focus>
+    </wave-level>
+    <phase-level>
+      <command>pytest task1-currency-web/tests task2-cbr-cli/tests -q</command>
+      <command>grace lint --path .</command>
+      <focus>Полная регрессия по обоим Python-проектам плюс проверка целостности GRACE-разметки</focus>
+    </phase-level>
+    <mocking-policy>HTTP мокируется через respx (MockRouter поверх httpx). Реальные сетевые вызовы в тестах запрещены. Task 3 (Apps Script) проверяется вручную в Google Таблице — автотесты недоступны в среде Apps Script.</mocking-policy>
+  </Testing>
+
+  <Observability>
+    <logger>Python stdlib logging (Task 1, Task 2); Logger.log / console (Apps Script, Task 3)</logger>
+    <log-format>[Module][function][BLOCK_NAME] message</log-format>
+    <required-fields>correlation_id (где применимо), source_url, status</required-fields>
+    <redaction>Секретов в данном проекте нет; правило «не логировать секреты и сырые высокорисковые payload» сохраняется как конвенция.</redaction>
+  </Observability>
+
+  <DeliveryShape>
+    <shape>Task 1: один Docker-контейнер — FastAPI отдаёт и REST API, и статический фронтенд (same-origin). Деплой на Render.com (free tier, Docker) либо локально.</shape>
+    <shape>Task 2: один Docker-контейнер — CLI-скрипт как ENTRYPOINT; результат экспорта пишется в смонтированный том.</shape>
+    <shape>Task 3: standalone .gs-файл, устанавливается в контейнер скрипта Google Таблицы; триггеры — кастомное меню + опциональный time-driven.</shape>
+  </DeliveryShape>
+</TechnologyStack>
