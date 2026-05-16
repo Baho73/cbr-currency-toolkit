@@ -1,0 +1,11 @@
+# Конфигурация деплоя на Render.com (Infrastructure as Code).
+# Создать сервис: Render Dashboard -> New -> Blueprint -> указать этот репозиторий.
+services:
+  - type: web
+    name: cbr-currency-web
+    runtime: docker
+    dockerfilePath: ./task1-currency-web/Dockerfile
+    dockerContext: ./task1-currency-web
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
