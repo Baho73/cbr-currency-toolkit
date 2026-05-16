@@ -196,7 +196,7 @@
     </M-T2-CLI>
 
     <!-- ==================== TASK 3: task3-apps-script ==================== -->
-    <M-T3-CONFIG NAME="Config" TYPE="UTILITY" STATUS="planned">
+    <M-T3-CONFIG NAME="Config" TYPE="UTILITY" STATUS="implemented">
       <purpose>Константы Apps Script: URL, лист, столбцы.</purpose>
       <path>task3-apps-script/Config.gs</path>
       <depends>none</depends>
@@ -206,7 +206,7 @@
       </annotations>
     </M-T3-CONFIG>
 
-    <M-T3-CBR-SERVICE NAME="CbrService" TYPE="INTEGRATION" STATUS="planned">
+    <M-T3-CBR-SERVICE NAME="CbrService" TYPE="INTEGRATION" STATUS="implemented">
       <purpose>Получение и парсинг курсов через UrlFetchApp.</purpose>
       <path>task3-apps-script/CbrService.gs</path>
       <depends>M-T3-CONFIG</depends>
@@ -216,7 +216,7 @@
       </annotations>
     </M-T3-CBR-SERVICE>
 
-    <M-T3-SHEET-WRITER NAME="SheetWriter" TYPE="DATA_LAYER" STATUS="planned">
+    <M-T3-SHEET-WRITER NAME="SheetWriter" TYPE="DATA_LAYER" STATUS="implemented">
       <purpose>Запись курсов и статуса в Google Таблицу.</purpose>
       <path>task3-apps-script/SheetWriter.gs</path>
       <depends>M-T3-CONFIG</depends>
@@ -226,7 +226,7 @@
       </annotations>
     </M-T3-SHEET-WRITER>
 
-    <M-T3-MAIN NAME="Main" TYPE="ENTRY_POINT" STATUS="planned">
+    <M-T3-MAIN NAME="Main" TYPE="ENTRY_POINT" STATUS="implemented">
       <purpose>Точка входа Apps Script: меню и updateRates.</purpose>
       <path>task3-apps-script/Main.gs</path>
       <depends>M-T3-CONFIG, M-T3-CBR-SERVICE, M-T3-SHEET-WRITER</depends>

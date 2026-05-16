@@ -473,7 +473,7 @@
       </checkpoint>
     </Phase-2>
 
-    <Phase-3 name="Task 3 — Google Apps Script" status="pending">
+    <Phase-3 name="Task 3 — Google Apps Script" status="done">
       <goal>Готовый к установке набор .gs-файлов с обработкой ошибок и инструкцией.</goal>
       <step-1 module="M-T3-CONFIG" status="pending" verification="V-M-T3-CONFIG">Константы конфигурации</step-1>
       <step-2 module="M-T3-CBR-SERVICE" status="pending" verification="V-M-T3-CBR-SERVICE">Сервис получения курсов (UrlFetchApp)</step-2>
