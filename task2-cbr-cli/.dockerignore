@@ -1,0 +1,9 @@
+tests/
+examples/
+output/
+requirements-dev.txt
+pytest.ini
+README.md
+__pycache__/
+*.pyc
+.pytest_cache/

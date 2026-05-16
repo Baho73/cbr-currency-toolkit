@@ -1,0 +1,542 @@
+[
+  {
+    "code": "AUD",
+    "name": "Австралийский доллар",
+    "nominal": 1,
+    "value": 52.3593,
+    "previous": 53.0839,
+    "delta_abs": -0.7246000000000024,
+    "delta_pct": -1.365008976356301,
+    "direction": "down"
+  },
+  {
+    "code": "AZN",
+    "name": "Азербайджанский манат",
+    "nominal": 1,
+    "value": 43.0162,
+    "previous": 43.0226,
+    "delta_abs": -0.006399999999999295,
+    "delta_pct": -0.01487590243267328,
+    "direction": "down"
+  },
+  {
+    "code": "DZD",
+    "name": "Алжирских динаров",
+    "nominal": 100,
+    "value": 55.0941,
+    "previous": 55.2575,
+    "delta_abs": -0.16340000000000288,
+    "delta_pct": -0.2957064651857266,
+    "direction": "down"
+  },
+  {
+    "code": "GBP",
+    "name": "Фунт стерлингов",
+    "nominal": 1,
+    "value": 98.6124,
+    "previous": 98.8394,
+    "delta_abs": -0.22700000000000387,
+    "delta_pct": -0.2296654977670887,
+    "direction": "down"
+  },
+  {
+    "code": "AMD",
+    "name": "Армянских драмов",
+    "nominal": 100,
+    "value": 19.8592,
+    "previous": 19.8326,
+    "delta_abs": 0.026600000000001955,
+    "delta_pct": 0.13412260621402114,
+    "direction": "up"
+  },
+  {
+    "code": "BHD",
+    "name": "Бахрейнский динар",
+    "nominal": 1,
+    "value": 194.446,
+    "previous": 194.4753,
+    "delta_abs": -0.02930000000000632,
+    "delta_pct": -0.015066180640938115,
+    "direction": "down"
+  },
+  {
+    "code": "BYN",
+    "name": "Белорусский рубль",
+    "nominal": 1,
+    "value": 26.558,
+    "previous": 26.4067,
+    "delta_abs": 0.1512999999999991,
+    "delta_pct": 0.5729606501380298,
+    "direction": "up"
+  },
+  {
+    "code": "BOB",
+    "name": "Боливиано",
+    "nominal": 1,
+    "value": 10.5829,
+    "previous": 10.5844,
+    "delta_abs": -0.0015000000000000568,
+    "delta_pct": -0.014171800007558829,
+    "direction": "down"
+  },
+  {
+    "code": "BRL",
+    "name": "Бразильский реал",
+    "nominal": 1,
+    "value": 14.6825,
+    "previous": 14.8913,
+    "delta_abs": -0.2088000000000001,
+    "delta_pct": -1.4021609933316777,
+    "direction": "down"
+  },
+  {
+    "code": "HUF",
+    "name": "Форинтов",
+    "nominal": 100,
+    "value": 23.6483,
+    "previous": 23.9273,
+    "delta_abs": -0.2789999999999999,
+    "delta_pct": -1.1660321055865055,
+    "direction": "down"
+  },
+  {
+    "code": "VND",
+    "name": "Донгов",
+    "nominal": 10000,
+    "value": 29.0985,
+    "previous": 29.1087,
+    "delta_abs": -0.010199999999997544,
+    "delta_pct": -0.035041070195500124,
+    "direction": "down"
+  },
+  {
+    "code": "HKD",
+    "name": "Гонконгских долларов",
+    "nominal": 10,
+    "value": 93.3582,
+    "previous": 93.3604,
+    "delta_abs": -0.002200000000001978,
+    "delta_pct": -0.002356459483894647,
+    "direction": "down"
+  },
+  {
+    "code": "GEL",
+    "name": "Лари",
+    "nominal": 1,
+    "value": 27.2843,
+    "previous": 27.2722,
+    "delta_abs": 0.012100000000000222,
+    "delta_pct": 0.04436752443880663,
+    "direction": "up"
+  },
+  {
+    "code": "DKK",
+    "name": "Датская крона",
+    "nominal": 1,
+    "value": 11.4625,
+    "previous": 11.4643,
+    "delta_abs": -0.0017999999999993577,
+    "delta_pct": -0.015700915014430515,
+    "direction": "down"
+  },
+  {
+    "code": "AED",
+    "name": "Дирхам ОАЭ",
+    "nominal": 1,
+    "value": 19.9122,
+    "previous": 19.9152,
+    "delta_abs": -0.0030000000000001137,
+    "delta_pct": -0.015063870812244485,
+    "direction": "down"
+  },
+  {
+    "code": "USD",
+    "name": "Доллар США",
+    "nominal": 1,
+    "value": 73.1275,
+    "previous": 73.1385,
+    "delta_abs": -0.01099999999999568,
+    "delta_pct": -0.015039958435018055,
+    "direction": "down"
+  },
+  {
+    "code": "EUR",
+    "name": "Евро",
+    "nominal": 1,
+    "value": 85.183,
+    "previous": 86.2899,
+    "delta_abs": -1.106899999999996,
+    "delta_pct": -1.282768898793481,
+    "direction": "down"
+  },
+  {
+    "code": "EGP",
+    "name": "Египетских фунтов",
+    "nominal": 10,
+    "value": 13.8227,
+    "previous": 13.6953,
+    "delta_abs": 0.12739999999999974,
+    "delta_pct": 0.9302461428373219,
+    "direction": "up"
+  },
+  {
+    "code": "INR",
+    "name": "Индийских рупий",
+    "nominal": 100,
+    "value": 76.2336,
+    "previous": 76.3825,
+    "delta_abs": -0.1488999999999976,
+    "delta_pct": -0.19493994043137838,
+    "direction": "down"
+  },
+  {
+    "code": "IDR",
+    "name": "Рупий",
+    "nominal": 10000,
+    "value": 41.7537,
+    "previous": 41.76,
+    "delta_abs": -0.0062999999999959755,
+    "delta_pct": -0.015086206896542087,
+    "direction": "down"
+  },
+  {
+    "code": "IRR",
+    "name": "Иранских риалов",
+    "nominal": 1000000,
+    "value": 49.6394,
+    "previous": 49.6468,
+    "delta_abs": -0.0073999999999969646,
+    "delta_pct": -0.014905290975444468,
+    "direction": "down"
+  },
+  {
+    "code": "KZT",
+    "name": "Тенге",
+    "nominal": 100,
+    "value": 15.4264,
+    "previous": 15.6402,
+    "delta_abs": -0.21380000000000088,
+    "delta_pct": -1.3669901919412852,
+    "direction": "down"
+  },
+  {
+    "code": "CAD",
+    "name": "Канадский доллар",
+    "nominal": 1,
+    "value": 53.2805,
+    "previous": 53.3741,
+    "delta_abs": -0.09359999999999502,
+    "delta_pct": -0.1753659546484063,
+    "direction": "down"
+  },
+  {
+    "code": "QAR",
+    "name": "Катарский риал",
+    "nominal": 1,
+    "value": 20.09,
+    "previous": 20.093,
+    "delta_abs": -0.0030000000000001137,
+    "delta_pct": -0.014930572836311717,
+    "direction": "down"
+  },
+  {
+    "code": "KGS",
+    "name": "Сомов",
+    "nominal": 100,
+    "value": 83.6221,
+    "previous": 83.6346,
+    "delta_abs": -0.012500000000002842,
+    "delta_pct": -0.01494596733887989,
+    "direction": "down"
+  },
+  {
+    "code": "CNY",
+    "name": "Юань",
+    "nominal": 1,
+    "value": 10.7318,
+    "previous": 10.7855,
+    "delta_abs": -0.05370000000000097,
+    "delta_pct": -0.4978906865699408,
+    "direction": "down"
+  },
+  {
+    "code": "CUP",
+    "name": "Кубинских песо",
+    "nominal": 10,
+    "value": 30.4698,
+    "previous": 30.4744,
+    "delta_abs": -0.0045999999999999375,
+    "delta_pct": -0.015094636809912378,
+    "direction": "down"
+  },
+  {
+    "code": "MDL",
+    "name": "Молдавских леев",
+    "nominal": 10,
+    "value": 42.4952,
+    "previous": 42.5776,
+    "delta_abs": -0.0823999999999998,
+    "delta_pct": -0.1935289917703201,
+    "direction": "down"
+  },
+  {
+    "code": "MNT",
+    "name": "Тугриков",
+    "nominal": 1000,
+    "value": 20.4491,
+    "previous": 20.4527,
+    "delta_abs": -0.0035999999999987153,
+    "delta_pct": -0.017601588054382625,
+    "direction": "down"
+  },
+  {
+    "code": "NGN",
+    "name": "Найр",
+    "nominal": 1000,
+    "value": 53.3432,
+    "previous": 53.364,
+    "delta_abs": -0.020799999999994156,
+    "delta_pct": -0.038977587886954046,
+    "direction": "down"
+  },
+  {
+    "code": "NZD",
+    "name": "Новозеландский доллар",
+    "nominal": 1,
+    "value": 43.0209,
+    "previous": 43.3602,
+    "delta_abs": -0.3393000000000015,
+    "delta_pct": -0.7825148407987083,
+    "direction": "down"
+  },
+  {
+    "code": "NOK",
+    "name": "Норвежских крон",
+    "nominal": 10,
+    "value": 79.7552,
+    "previous": 79.7672,
+    "delta_abs": -0.012000000000000455,
+    "delta_pct": -0.015043777392211905,
+    "direction": "down"
+  },
+  {
+    "code": "OMR",
+    "name": "Оманский риал",
+    "nominal": 1,
+    "value": 190.1886,
+    "previous": 190.2172,
+    "delta_abs": -0.028599999999983083,
+    "delta_pct": -0.015035443692780193,
+    "direction": "down"
+  },
+  {
+    "code": "PLN",
+    "name": "Злотый",
+    "nominal": 1,
+    "value": 20.0212,
+    "previous": 20.2012,
+    "delta_abs": -0.17999999999999972,
+    "delta_pct": -0.891036176068747,
+    "direction": "down"
+  },
+  {
+    "code": "SAR",
+    "name": "Саудовский риял",
+    "nominal": 1,
+    "value": 19.5007,
+    "previous": 19.5036,
+    "delta_abs": -0.0029000000000003467,
+    "delta_pct": -0.014869049816445922,
+    "direction": "down"
+  },
+  {
+    "code": "RON",
+    "name": "Румынский лей",
+    "nominal": 1,
+    "value": 16.3227,
+    "previous": 16.4523,
+    "delta_abs": -0.12959999999999994,
+    "delta_pct": -0.7877318064951402,
+    "direction": "down"
+  },
+  {
+    "code": "XDR",
+    "name": "СДР (специальные права заимствования)",
+    "nominal": 1,
+    "value": 100.3521,
+    "previous": 100.3694,
+    "delta_abs": -0.017300000000005866,
+    "delta_pct": -0.017236329000677366,
+    "direction": "down"
+  },
+  {
+    "code": "SGD",
+    "name": "Сингапурский доллар",
+    "nominal": 1,
+    "value": 57.2561,
+    "previous": 57.4491,
+    "delta_abs": -0.19299999999999784,
+    "delta_pct": -0.335949562308196,
+    "direction": "down"
+  },
+  {
+    "code": "TJS",
+    "name": "Сомони",
+    "nominal": 10,
+    "value": 78.2531,
+    "previous": 78.2063,
+    "delta_abs": 0.046800000000004616,
+    "delta_pct": 0.059841726305942894,
+    "direction": "up"
+  },
+  {
+    "code": "THB",
+    "name": "Батов",
+    "nominal": 10,
+    "value": 22.4786,
+    "previous": 22.6134,
+    "delta_abs": -0.13479999999999848,
+    "delta_pct": -0.5961067331758978,
+    "direction": "down"
+  },
+  {
+    "code": "BDT",
+    "name": "Так",
+    "nominal": 100,
+    "value": 59.5311,
+    "previous": 59.5401,
+    "delta_abs": -0.009000000000000341,
+    "delta_pct": -0.015115863090589939,
+    "direction": "down"
+  },
+  {
+    "code": "TRY",
+    "name": "Турецких лир",
+    "nominal": 10,
+    "value": 16.1113,
+    "previous": 16.1199,
+    "delta_abs": -0.008600000000001273,
+    "delta_pct": -0.05335020688714739,
+    "direction": "down"
+  },
+  {
+    "code": "TMT",
+    "name": "Новый туркменский манат",
+    "nominal": 1,
+    "value": 20.8936,
+    "previous": 20.8967,
+    "delta_abs": -0.0030999999999998806,
+    "delta_pct": -0.014834878234361791,
+    "direction": "down"
+  },
+  {
+    "code": "UZS",
+    "name": "Узбекских сумов",
+    "nominal": 10000,
+    "value": 61.0092,
+    "previous": 61.0742,
+    "delta_abs": -0.06499999999999773,
+    "delta_pct": -0.10642791882660392,
+    "direction": "down"
+  },
+  {
+    "code": "UAH",
+    "name": "Гривен",
+    "nominal": 10,
+    "value": 16.5926,
+    "previous": 16.6387,
+    "delta_abs": -0.04609999999999914,
+    "delta_pct": -0.2770649149272428,
+    "direction": "down"
+  },
+  {
+    "code": "CZK",
+    "name": "Чешских крон",
+    "nominal": 10,
+    "value": 34.9391,
+    "previous": 35.2322,
+    "delta_abs": -0.2930999999999955,
+    "delta_pct": -0.8319094464722484,
+    "direction": "down"
+  },
+  {
+    "code": "SEK",
+    "name": "Шведских крон",
+    "nominal": 10,
+    "value": 78.4873,
+    "previous": 78.4991,
+    "delta_abs": -0.011799999999993815,
+    "delta_pct": -0.015032019475374643,
+    "direction": "down"
+  },
+  {
+    "code": "CHF",
+    "name": "Швейцарский франк",
+    "nominal": 1,
+    "value": 93.0612,
+    "previous": 93.5036,
+    "delta_abs": -0.44240000000000634,
+    "delta_pct": -0.47313686317960624,
+    "direction": "down"
+  },
+  {
+    "code": "ETB",
+    "name": "Эфиопских быров",
+    "nominal": 100,
+    "value": 46.4499,
+    "previous": 46.4835,
+    "delta_abs": -0.03359999999999985,
+    "delta_pct": -0.07228371357578464,
+    "direction": "down"
+  },
+  {
+    "code": "RSD",
+    "name": "Сербских динаров",
+    "nominal": 100,
+    "value": 72.5538,
+    "previous": 72.9801,
+    "delta_abs": -0.4262999999999977,
+    "delta_pct": -0.5841318386793081,
+    "direction": "down"
+  },
+  {
+    "code": "ZAR",
+    "name": "Рэндов",
+    "nominal": 10,
+    "value": 43.8767,
+    "previous": 44.5795,
+    "delta_abs": -0.7028000000000034,
+    "delta_pct": -1.5765093821151055,
+    "direction": "down"
+  },
+  {
+    "code": "KRW",
+    "name": "Вон",
+    "nominal": 1000,
+    "value": 49.0196,
+    "previous": 48.9188,
+    "delta_abs": 0.10079999999999956,
+    "delta_pct": 0.20605574952778802,
+    "direction": "up"
+  },
+  {
+    "code": "JPY",
+    "name": "Иен",
+    "nominal": 100,
+    "value": 46.1372,
+    "previous": 46.3342,
+    "delta_abs": -0.19700000000000273,
+    "delta_pct": -0.4251719032593694,
+    "direction": "down"
+  },
+  {
+    "code": "MMK",
+    "name": "Кьятов",
+    "nominal": 1000,
+    "value": 34.8226,
+    "previous": 34.8279,
+    "delta_abs": -0.005299999999998306,
+    "delta_pct": -0.015217684672341159,
+    "direction": "down"
+  }
+]
