@@ -24,7 +24,7 @@ Test_26.05.16/
 ### Ссылки (заполняются при публикации)
 
 - **Репозиторий:** <https://github.com/Baho73/cbr-currency-toolkit>
-- **Развёрнутая версия Задачи 1:** _<URL после деплоя на Render — см. ниже>_
+- **Развёрнутая версия Задачи 1:** <https://converter.teamplan.ru>
 - **Google Таблица Задачи 3:** _<ссылка с доступом на просмотр после установки скрипта>_
 
 > Репозиторий содержит полную историю из 32 коммитов (один коммит на модуль),
@@ -53,9 +53,11 @@ Test_26.05.16/
 **Запуск:** `docker build -t currency-web . && docker run -p 8000:8000 currency-web`
 → <http://localhost:8000>. Подробно — `task1-currency-web/README.md`.
 
-**Деплой:** файл `task1-currency-web/render.yaml` описывает деплой на Render.com
-(free tier, Docker). Smoke-тест локально пройден: 55 валют, конвертация
-100 USD → 7312.75 ₽ по реальному курсу.
+**Деплой:** развёрнуто на VPS по адресу <https://converter.teamplan.ru> —
+Docker-контейнер за reverse proxy nginx, HTTPS через Let's Encrypt. Конфигурация
+и инструкция деплоя — в `task1-currency-web/deploy/`. Альтернатива для облака —
+`task1-currency-web/render.yaml` (Render.com). Проверено в браузере: загрузка
+курсов, конвертация (1000 USD → 73127.50 ₽), обработка ошибок.
 
 **Затраченное время:** ≈ 2 ч 30 мин.
 
