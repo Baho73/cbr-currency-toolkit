@@ -3,21 +3,503 @@
     <objective>Три независимых самодостаточных проекта вокруг API курсов валют ЦБ РФ; каждый запускается и проверяется изолированно.</objective>
     <objective>Демонстрация устойчивого продакшн-кода: ООП, асинхронность, иерархия исключений, retry/timeout, типизация, тесты.</objective>
     <non-goal>Кросс-задачное переиспользование кода (вариант A архитектуры — независимые проекты).</non-goal>
-    <risk-1>Внешний API может вернуть не-JSON или изменить структуру — строгий парсинг и валидация обязательны.</risk-1>
+    <decision>Архитектура одобрена пользователем через делегирование (инвокация /afk после вопроса об утверждении).</decision>
+    <rationale lib="fastapi,httpx,uvicorn,pydantic,pydantic-settings,pytest,pytest-asyncio,respx">Все внешние зависимости активно поддерживаются, лицензии MIT/BSD/Apache-2.0, известных критичных CVE нет, blast radius ограничен одним проектом. Дублирование зависимостей между task1 и task2 осознанно — следствие требования изолированной проверки проектов.</rationale>
+    <risk-1>Внешний API может вернуть HTML/ошибку вместо JSON — строгая валидация формата в клиенте.</risk-1>
+    <risk-2>Конвертация через рубль с номиналом — источник арифметических ошибок; нужны прицельные тесты на валюту с номиналом &gt; 1.</risk-2>
+    <risk-3>FastAPI требует живого процесса — деплой через Docker; локальный запуск гарантирован.</risk-3>
+    <risk-4>Task 3 не покрывается автотестами — компенсируется ревью и статус-ячейкой ошибок.</risk-4>
   </ArchitectureNotes>
 
   <Modules>
-    <!-- Модули, контракты, интерфейсы и порядок реализации заполняются скиллом grace-plan.
-         <M-xxx NAME="..." TYPE="..." LAYER="N" ORDER="N" STATUS="planned"> ... </M-xxx>
-    -->
+
+    <!-- ==================== TASK 1: task1-currency-web ==================== -->
+    <M-T1-CONFIG NAME="Config" TYPE="UTILITY" LAYER="0" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Типизированная конфигурация веб-конвертера из переменных окружения с безопасными дефолтами.</purpose>
+        <inputs><param name="env" type="environment variables" /></inputs>
+        <outputs><param name="settings" type="Settings" /></outputs>
+        <errors><error code="—" /></errors>
+      </contract>
+      <interface>
+        <type-Settings PURPOSE="pydantic-settings модель: cbr_api_url, http_timeout, retry_attempts, retry_backoff, cache_ttl_seconds, host, port" />
+        <fn-get_settings PURPOSE="Кэшированный доступ к синглтону Settings" />
+      </interface>
+      <depends>—</depends>
+      <target><source>task1-currency-web/app/config.py</source><tests>task1-currency-web/tests/unit/test_config.py</tests></target>
+      <observability><log-prefix>[Config]</log-prefix><critical-block>BLOCK_BUILD_SETTINGS</critical-block></observability>
+      <verification-ref>V-M-T1-CONFIG</verification-ref>
+      <notes><note-1>Без секретов; все поля имеют дефолты для запуска без .env.</note-1></notes>
+    </M-T1-CONFIG>
+
+    <M-T1-ERRORS NAME="Errors" TYPE="UTILITY" LAYER="0" ORDER="2" STATUS="planned">
+      <contract>
+        <purpose>Иерархия доменных исключений конвертера для управляемой обработки ошибок.</purpose>
+        <inputs><param name="message" type="str" /></inputs>
+        <outputs><param name="exception" type="Exception subclass" /></outputs>
+        <errors><error code="—" /></errors>
+      </contract>
+      <interface>
+        <class-CbrError PURPOSE="Базовое исключение интеграции с API ЦБ РФ" />
+        <class-CbrUnavailableError PURPOSE="API недоступен после всех retry (сеть/таймаут/5xx)" />
+        <class-CbrResponseError PURPOSE="Ответ получен, но формат некорректен (не-JSON, нет ключей)" />
+        <class-ConversionError PURPOSE="Базовое исключение конвертации валют" />
+        <class-UnknownCurrencyError PURPOSE="Запрошена валюта, отсутствующая в снимке курсов" />
+      </interface>
+      <depends>—</depends>
+      <target><source>task1-currency-web/app/errors.py</source><tests>—</tests></target>
+      <observability><log-prefix>[Errors]</log-prefix><critical-block>—</critical-block></observability>
+      <verification-ref>V-M-T1-ERRORS</verification-ref>
+      <notes><note-1>Проверяется косвенно через тесты клиента и конвертера.</note-1></notes>
+    </M-T1-ERRORS>
+
+    <M-T1-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" LAYER="1" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Неизменяемые доменные модели курсов валют и снимка курсов на дату.</purpose>
+        <inputs><param name="raw fields" type="str/float/int/datetime" /></inputs>
+        <outputs><param name="Currency / RatesSnapshot" type="frozen dataclass" /></outputs>
+        <errors><error code="UnknownCurrencyError" /></errors>
+      </contract>
+      <interface>
+        <type-Currency PURPOSE="frozen dataclass: code, name, nominal, value, previous; свойство rate_per_unit и delta" />
+        <type-RatesSnapshot PURPOSE="frozen dataclass: date, previous_date, currencies; метод get(code) и наличие RUB" />
+      </interface>
+      <depends>M-T1-ERRORS</depends>
+      <target><source>task1-currency-web/app/domain.py</source><tests>task1-currency-web/tests/unit/test_domain.py</tests></target>
+      <observability><log-prefix>[Domain]</log-prefix><critical-block>BLOCK_LOOKUP_CURRENCY</critical-block></observability>
+      <verification-ref>V-M-T1-DOMAIN</verification-ref>
+      <notes><note-1>RUB моделируется синтетически (rate_per_unit = 1.0, nominal = 1).</note-1></notes>
+    </M-T1-DOMAIN>
+
+    <M-T1-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" LAYER="2" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Асинхронный HTTP-клиент к API ЦБ РФ с retry, таймаутом и валидацией формата ответа.</purpose>
+        <inputs><param name="settings" type="Settings" /></inputs>
+        <outputs><param name="snapshot" type="RatesSnapshot" /></outputs>
+        <errors><error code="CbrUnavailableError" /><error code="CbrResponseError" /></errors>
+      </contract>
+      <interface>
+        <class-CbrClient PURPOSE="async-клиент; метод fetch_rates() возвращает RatesSnapshot; async context manager" />
+      </interface>
+      <depends>M-T1-CONFIG, M-T1-DOMAIN, M-T1-ERRORS</depends>
+      <target><source>task1-currency-web/app/cbr_client.py</source><tests>task1-currency-web/tests/unit/test_cbr_client.py</tests></target>
+      <observability><log-prefix>[CbrClient]</log-prefix><critical-block>BLOCK_FETCH_WITH_RETRY</critical-block></observability>
+      <verification-ref>V-M-T1-CBR-CLIENT</verification-ref>
+      <notes><note-1>httpx.AsyncClient; retry с экспоненциальным backoff на сетевых ошибках и 5xx.</note-1></notes>
+    </M-T1-CBR-CLIENT>
+
+    <M-T1-CACHE NAME="RatesCache" TYPE="DATA_LAYER" LAYER="3" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Async-safe TTL-кэш снимка курсов поверх CbrClient, чтобы не дёргать API на каждый запрос.</purpose>
+        <inputs><param name="client" type="CbrClient" /><param name="ttl" type="int seconds" /></inputs>
+        <outputs><param name="snapshot" type="RatesSnapshot" /></outputs>
+        <errors><error code="CbrUnavailableError" /><error code="CbrResponseError" /></errors>
+      </contract>
+      <interface>
+        <class-RatesCache PURPOSE="метод get_snapshot(): отдаёт кэш в пределах TTL, иначе обновляет; защищён asyncio.Lock" />
+      </interface>
+      <depends>M-T1-CBR-CLIENT, M-T1-CONFIG</depends>
+      <target><source>task1-currency-web/app/cache.py</source><tests>task1-currency-web/tests/unit/test_cache.py</tests></target>
+      <observability><log-prefix>[RatesCache]</log-prefix><critical-block>BLOCK_REFRESH_IF_STALE</critical-block></observability>
+      <verification-ref>V-M-T1-CACHE</verification-ref>
+      <notes><note-1>При конкурентных запросах обновление выполняется один раз (single-flight через Lock).</note-1></notes>
+    </M-T1-CACHE>
+
+    <M-T1-CONVERTER NAME="CurrencyConverter" TYPE="CORE_LOGIC" LAYER="2" ORDER="2" STATUS="planned">
+      <contract>
+        <purpose>Кросс-конвертация суммы из любой валюты в любую через рубль с учётом номинала.</purpose>
+        <inputs><param name="amount" type="Decimal" /><param name="from_code" type="str" /><param name="to_code" type="str" /><param name="snapshot" type="RatesSnapshot" /></inputs>
+        <outputs><param name="result" type="ConversionResult" /></outputs>
+        <errors><error code="UnknownCurrencyError" /><error code="ConversionError" /></errors>
+      </contract>
+      <interface>
+        <class-CurrencyConverter PURPOSE="метод convert(amount, from_code, to_code, snapshot) -> ConversionResult" />
+        <type-ConversionResult PURPOSE="amount, from_code, to_code, result, rate (эффективный курс)" />
+      </interface>
+      <depends>M-T1-DOMAIN, M-T1-ERRORS</depends>
+      <target><source>task1-currency-web/app/converter.py</source><tests>task1-currency-web/tests/unit/test_converter.py</tests></target>
+      <observability><log-prefix>[CurrencyConverter]</log-prefix><critical-block>BLOCK_CROSS_RATE</critical-block></observability>
+      <verification-ref>V-M-T1-CONVERTER</verification-ref>
+      <notes><note-1>Decimal для денежной арифметики; округление результата до 4 знаков.</note-1></notes>
+    </M-T1-CONVERTER>
+
+    <M-T1-SCHEMAS NAME="ApiSchemas" TYPE="TYPES" LAYER="0" ORDER="3" STATUS="planned">
+      <contract>
+        <purpose>Pydantic-схемы запросов и ответов REST API конвертера.</purpose>
+        <inputs><param name="JSON body / query" type="dict" /></inputs>
+        <outputs><param name="validated models" type="BaseModel" /></outputs>
+        <errors><error code="422 (FastAPI validation)" /></errors>
+      </contract>
+      <interface>
+        <type-ConvertRequest PURPOSE="amount &gt; 0, from_code, to_code (3-буквенные)" />
+        <type-ConvertResponse PURPOSE="результат конвертации" />
+        <type-RateItem PURPOSE="одна валюта в ответе списка курсов" />
+        <type-RatesResponse PURPOSE="дата + список RateItem" />
+      </interface>
+      <depends>—</depends>
+      <target><source>task1-currency-web/app/schemas.py</source><tests>—</tests></target>
+      <observability><log-prefix>[ApiSchemas]</log-prefix><critical-block>—</critical-block></observability>
+      <verification-ref>V-M-T1-SCHEMAS</verification-ref>
+      <notes><note-1>Валидация проверяется через тесты API (422 на невалидный ввод).</note-1></notes>
+    </M-T1-SCHEMAS>
+
+    <M-T1-API NAME="ApiRoutes" TYPE="ENTRY_POINT" LAYER="4" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>HTTP-роуты конвертера: список курсов, конвертация, health-check.</purpose>
+        <inputs><param name="HTTP request" type="Request" /></inputs>
+        <outputs><param name="HTTP response" type="JSON" /></outputs>
+        <errors><error code="422" /><error code="502 (CbrUnavailable)" /><error code="400 (UnknownCurrency)" /></errors>
+      </contract>
+      <interface>
+        <fn-build_router PURPOSE="Создаёт APIRouter с роутами /api/rates, /api/convert, /api/health" />
+      </interface>
+      <depends>M-T1-SCHEMAS, M-T1-CACHE, M-T1-CONVERTER, M-T1-ERRORS</depends>
+      <target><source>task1-currency-web/app/api.py</source><tests>task1-currency-web/tests/test_api.py</tests></target>
+      <observability><log-prefix>[ApiRoutes]</log-prefix><critical-block>BLOCK_HANDLE_CONVERT</critical-block></observability>
+      <verification-ref>V-M-T1-API</verification-ref>
+      <notes><note-1>Доменные исключения транслируются в HTTP-коды через exception handlers.</note-1></notes>
+    </M-T1-API>
+
+    <M-T1-APP NAME="AppFactory" TYPE="ENTRY_POINT" LAYER="5" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Сборка приложения FastAPI: lifespan, DI кэша/клиента, монтирование статики и обработчиков ошибок.</purpose>
+        <inputs><param name="settings" type="Settings" /></inputs>
+        <outputs><param name="app" type="FastAPI" /></outputs>
+        <errors><error code="—" /></errors>
+      </contract>
+      <interface>
+        <fn-create_app PURPOSE="Фабрика FastAPI-приложения" />
+        <export-app PURPOSE="ASGI-инстанс для uvicorn" />
+      </interface>
+      <depends>M-T1-API, M-T1-CONFIG, M-T1-CACHE, M-T1-CBR-CLIENT</depends>
+      <target><source>task1-currency-web/app/main.py</source><tests>—</tests></target>
+      <observability><log-prefix>[AppFactory]</log-prefix><critical-block>BLOCK_LIFESPAN</critical-block></observability>
+      <verification-ref>V-M-T1-APP</verification-ref>
+      <notes><note-1>Проверяется через тесты API (TestClient поднимает приложение целиком).</note-1></notes>
+    </M-T1-APP>
+
+    <M-T1-FRONTEND NAME="Frontend" TYPE="UI_COMPONENT" LAYER="0" ORDER="4" STATUS="planned">
+      <contract>
+        <purpose>Клиентский интерфейс конвертера: загрузка курсов и конвертация через REST API.</purpose>
+        <inputs><param name="user input" type="DOM events" /></inputs>
+        <outputs><param name="rendered UI" type="DOM" /></outputs>
+        <errors><error code="отображение ошибки в UI" /></errors>
+      </contract>
+      <interface>
+        <class-ApiClient PURPOSE="JS-класс: async-обёртка над fetch к /api/*" />
+        <class-ConverterController PURPOSE="JS-класс: связывание DOM, валидация ввода, рендер результата" />
+      </interface>
+      <depends>—</depends>
+      <target><source>task1-currency-web/static/index.html, static/style.css, static/app.js</source><tests>—</tests></target>
+      <observability><log-prefix>[Frontend]</log-prefix><critical-block>—</critical-block></observability>
+      <verification-ref>V-M-T1-FRONTEND</verification-ref>
+      <notes><note-1>Проверяется вручную в браузере; логика на ООП-классах, async fetch.</note-1></notes>
+    </M-T1-FRONTEND>
+
+    <!-- ==================== TASK 2: task2-cbr-cli ==================== -->
+    <M-T2-CONFIG NAME="Config" TYPE="UTILITY" LAYER="0" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Конфигурация CLI-аналитика: URL API, таймауты, retry, дефолты вывода.</purpose>
+        <inputs><param name="env / defaults" type="environment" /></inputs>
+        <outputs><param name="settings" type="Settings" /></outputs>
+        <errors><error code="—" /></errors>
+      </contract>
+      <interface>
+        <type-Settings PURPOSE="frozen dataclass: cbr_api_url, http_timeout, retry_attempts, retry_backoff" />
+        <fn-load_settings PURPOSE="Сборка Settings из env с дефолтами" />
+      </interface>
+      <depends>—</depends>
+      <target><source>task2-cbr-cli/cbr_cli/config.py</source><tests>task2-cbr-cli/tests/unit/test_config.py</tests></target>
+      <observability><log-prefix>[Config]</log-prefix><critical-block>—</critical-block></observability>
+      <verification-ref>V-M-T2-CONFIG</verification-ref>
+      <notes><note-1>Без pydantic — лёгкий dataclass, чтобы не тащить зависимость в CLI.</note-1></notes>
+    </M-T2-CONFIG>
+
+    <M-T2-ERRORS NAME="Errors" TYPE="UTILITY" LAYER="0" ORDER="2" STATUS="planned">
+      <contract>
+        <purpose>Иерархия исключений CLI-аналитика для управляемой обработки и корректных exit codes.</purpose>
+        <inputs><param name="message" type="str" /></inputs>
+        <outputs><param name="exception" type="Exception subclass" /></outputs>
+        <errors><error code="—" /></errors>
+      </contract>
+      <interface>
+        <class-CbrError PURPOSE="Базовое исключение интеграции с API" />
+        <class-CbrUnavailableError PURPOSE="API недоступен после retry" />
+        <class-CbrResponseError PURPOSE="Некорректный формат ответа" />
+      </interface>
+      <depends>—</depends>
+      <target><source>task2-cbr-cli/cbr_cli/errors.py</source><tests>—</tests></target>
+      <observability><log-prefix>[Errors]</log-prefix><critical-block>—</critical-block></observability>
+      <verification-ref>V-M-T2-ERRORS</verification-ref>
+      <notes><note-1>Проверяется косвенно через тесты клиента и CLI.</note-1></notes>
+    </M-T2-ERRORS>
+
+    <M-T2-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" LAYER="1" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Доменные модели курсов и результат аналитического разбора одной валюты.</purpose>
+        <inputs><param name="raw fields" type="str/float/int" /></inputs>
+        <outputs><param name="Currency / RatesSnapshot / RateAnalysis" type="frozen dataclass" /></outputs>
+        <errors><error code="—" /></errors>
+      </contract>
+      <interface>
+        <type-Currency PURPOSE="frozen dataclass: code, name, nominal, value, previous" />
+        <type-RatesSnapshot PURPOSE="frozen dataclass: date, previous_date, currencies" />
+        <type-RateAnalysis PURPOSE="frozen dataclass: currency + delta_abs, delta_pct, direction" />
+      </interface>
+      <depends>M-T2-ERRORS</depends>
+      <target><source>task2-cbr-cli/cbr_cli/domain.py</source><tests>task2-cbr-cli/tests/unit/test_domain.py</tests></target>
+      <observability><log-prefix>[Domain]</log-prefix><critical-block>—</critical-block></observability>
+      <verification-ref>V-M-T2-DOMAIN</verification-ref>
+      <notes><note-1>Модели чистые, без побочных эффектов.</note-1></notes>
+    </M-T2-DOMAIN>
+
+    <M-T2-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" LAYER="2" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Асинхронный HTTP-клиент к API ЦБ РФ с retry, таймаутом и валидацией формата.</purpose>
+        <inputs><param name="settings" type="Settings" /></inputs>
+        <outputs><param name="snapshot" type="RatesSnapshot" /></outputs>
+        <errors><error code="CbrUnavailableError" /><error code="CbrResponseError" /></errors>
+      </contract>
+      <interface>
+        <class-CbrClient PURPOSE="async-клиент; fetch_rates() -> RatesSnapshot; async context manager" />
+      </interface>
+      <depends>M-T2-CONFIG, M-T2-DOMAIN, M-T2-ERRORS</depends>
+      <target><source>task2-cbr-cli/cbr_cli/cbr_client.py</source><tests>task2-cbr-cli/tests/unit/test_cbr_client.py</tests></target>
+      <observability><log-prefix>[CbrClient]</log-prefix><critical-block>BLOCK_FETCH_WITH_RETRY</critical-block></observability>
+      <verification-ref>V-M-T2-CBR-CLIENT</verification-ref>
+      <notes><note-1>httpx.AsyncClient; экспоненциальный backoff.</note-1></notes>
+    </M-T2-CBR-CLIENT>
+
+    <M-T2-ANALYTICS NAME="RateAnalyzer" TYPE="CORE_LOGIC" LAYER="2" ORDER="2" STATUS="planned">
+      <contract>
+        <purpose>Расчёт производных значений по курсам: суточная дельта, % изменения, сортировка, топ движений, агрегаты.</purpose>
+        <inputs><param name="snapshot" type="RatesSnapshot" /></inputs>
+        <outputs><param name="analyses" type="list[RateAnalysis]" /><param name="summary" type="AnalysisSummary" /></outputs>
+        <errors><error code="—" /></errors>
+      </contract>
+      <interface>
+        <class-RateAnalyzer PURPOSE="analyze(snapshot) -> list[RateAnalysis]; top_movers(n); summary()" />
+        <type-AnalysisSummary PURPOSE="кол-во валют, средний |% изменения|, самая укрепившаяся/ослабшая валюта" />
+      </interface>
+      <depends>M-T2-DOMAIN</depends>
+      <target><source>task2-cbr-cli/cbr_cli/analytics.py</source><tests>task2-cbr-cli/tests/unit/test_analytics.py</tests></target>
+      <observability><log-prefix>[RateAnalyzer]</log-prefix><critical-block>BLOCK_COMPUTE_DELTAS</critical-block></observability>
+      <verification-ref>V-M-T2-ANALYTICS</verification-ref>
+      <notes><note-1>Сортировка по убыванию модуля % изменения для топа движений.</note-1></notes>
+    </M-T2-ANALYTICS>
+
+    <M-T2-REPORT NAME="Reporter" TYPE="CORE_LOGIC" LAYER="2" ORDER="3" STATUS="planned">
+      <contract>
+        <purpose>Форматирование результата: читаемая консольная таблица и экспорт в CSV/JSON.</purpose>
+        <inputs><param name="analyses" type="list[RateAnalysis]" /><param name="summary" type="AnalysisSummary" /></inputs>
+        <outputs><param name="console text / file" type="str / file path" /></outputs>
+        <errors><error code="OSError (запись файла)" /></errors>
+      </contract>
+      <interface>
+        <class-ConsoleReporter PURPOSE="render(analyses, summary) -> выровненная таблица в stdout" />
+        <class-FileExporter PURPOSE="export(analyses, path, fmt) -> запись CSV или JSON, возврат пути" />
+      </interface>
+      <depends>M-T2-DOMAIN</depends>
+      <target><source>task2-cbr-cli/cbr_cli/report.py</source><tests>task2-cbr-cli/tests/unit/test_report.py</tests></target>
+      <observability><log-prefix>[Reporter]</log-prefix><critical-block>BLOCK_WRITE_FILE</critical-block></observability>
+      <verification-ref>V-M-T2-REPORT</verification-ref>
+      <notes><note-1>CSV через стандартный модуль csv; JSON с ensure_ascii=False.</note-1></notes>
+    </M-T2-REPORT>
+
+    <M-T2-CLI NAME="Cli" TYPE="ENTRY_POINT" LAYER="3" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Точка входа CLI: разбор аргументов, оркестрация fetch→analyze→report, логирование, exit codes.</purpose>
+        <inputs><param name="argv" type="list[str]" /></inputs>
+        <outputs><param name="exit code" type="int" /></outputs>
+        <errors><error code="exit 1 (CbrUnavailable)" /><error code="exit 2 (CbrResponse)" /><error code="exit 3 (прочее)" /></errors>
+      </contract>
+      <interface>
+        <fn-main PURPOSE="async-оркестратор; возвращает exit code" />
+        <fn-build_parser PURPOSE="argparse: --format csv|json, --output, --top N, --no-export" />
+      </interface>
+      <depends>M-T2-CONFIG, M-T2-ERRORS, M-T2-CBR-CLIENT, M-T2-ANALYTICS, M-T2-REPORT</depends>
+      <target><source>task2-cbr-cli/cbr_cli/__main__.py</source><tests>task2-cbr-cli/tests/test_cli.py</tests></target>
+      <observability><log-prefix>[Cli]</log-prefix><critical-block>BLOCK_RUN_PIPELINE</critical-block></observability>
+      <verification-ref>V-M-T2-CLI</verification-ref>
+      <notes><note-1>Запуск через `python -m cbr_cli`; asyncio.run в синхронной обёртке.</note-1></notes>
+    </M-T2-CLI>
+
+    <!-- ==================== TASK 3: task3-apps-script ==================== -->
+    <M-T3-CONFIG NAME="Config" TYPE="UTILITY" LAYER="0" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Константы Apps Script: URL API, имя листа, заголовки столбцов, имя статус-ячейки.</purpose>
+        <inputs><param name="—" type="—" /></inputs>
+        <outputs><param name="CONFIG" type="frozen object" /></outputs>
+        <errors><error code="—" /></errors>
+      </contract>
+      <interface>
+        <export-CONFIG PURPOSE="Замороженный объект констант конфигурации" />
+      </interface>
+      <depends>—</depends>
+      <target><source>task3-apps-script/Config.gs</source><tests>—</tests></target>
+      <observability><log-prefix>[Config]</log-prefix><critical-block>—</critical-block></observability>
+      <verification-ref>V-M-T3-CONFIG</verification-ref>
+      <notes><note-1>Object.freeze для иммутабельности.</note-1></notes>
+    </M-T3-CONFIG>
+
+    <M-T3-CBR-SERVICE NAME="CbrService" TYPE="INTEGRATION" LAYER="1" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Получение и парсинг курсов ЦБ РФ через UrlFetchApp с обработкой ошибок HTTP и формата.</purpose>
+        <inputs><param name="CONFIG" type="object" /></inputs>
+        <outputs><param name="rates" type="Array of rate rows" /></outputs>
+        <errors><error code="Error (HTTP != 200)" /><error code="Error (некорректный JSON/структура)" /></errors>
+      </contract>
+      <interface>
+        <class-CbrService PURPOSE="метод fetchRates() -> массив строк курсов; бросает Error при сбое" />
+      </interface>
+      <depends>M-T3-CONFIG</depends>
+      <target><source>task3-apps-script/CbrService.gs</source><tests>—</tests></target>
+      <observability><log-prefix>[CbrService]</log-prefix><critical-block>BLOCK_FETCH_RATES</critical-block></observability>
+      <verification-ref>V-M-T3-CBR-SERVICE</verification-ref>
+      <notes><note-1>muteHttpExceptions: true + явная проверка getResponseCode().</note-1></notes>
+    </M-T3-CBR-SERVICE>
+
+    <M-T3-SHEET-WRITER NAME="SheetWriter" TYPE="DATA_LAYER" LAYER="1" ORDER="2" STATUS="planned">
+      <contract>
+        <purpose>Запись курсов в столбцы Google Таблицы и обновление ячейки статуса/ошибки.</purpose>
+        <inputs><param name="sheet" type="Sheet" /><param name="rates" type="Array" /></inputs>
+        <outputs><param name="—" type="мутация листа" /></outputs>
+        <errors><error code="—" /></errors>
+      </contract>
+      <interface>
+        <class-SheetWriter PURPOSE="writeRates(rates); writeStatus(message, isError)" />
+      </interface>
+      <depends>M-T3-CONFIG</depends>
+      <target><source>task3-apps-script/SheetWriter.gs</source><tests>—</tests></target>
+      <observability><log-prefix>[SheetWriter]</log-prefix><critical-block>BLOCK_WRITE_RATES</critical-block></observability>
+      <verification-ref>V-M-T3-SHEET-WRITER</verification-ref>
+      <notes><note-1>Очистка старого диапазона данных перед записью; статус — отдельная ячейка.</note-1></notes>
+    </M-T3-SHEET-WRITER>
+
+    <M-T3-MAIN NAME="Main" TYPE="ENTRY_POINT" LAYER="2" ORDER="1" STATUS="planned">
+      <contract>
+        <purpose>Точка входа Apps Script: меню onOpen, функция updateRates по триггеру, оркестрация и обработка ошибок.</purpose>
+        <inputs><param name="trigger event" type="—" /></inputs>
+        <outputs><param name="—" type="мутация листа" /></outputs>
+        <errors><error code="запись ошибки в статус-ячейку" /></errors>
+      </contract>
+      <interface>
+        <fn-onOpen PURPOSE="Добавляет кастомное меню «Курсы ЦБ РФ» при открытии таблицы" />
+        <fn-updateRates PURPOSE="Основная функция: fetch -> write -> status; вызывается из меню и time-триггера" />
+      </interface>
+      <depends>M-T3-CONFIG, M-T3-CBR-SERVICE, M-T3-SHEET-WRITER</depends>
+      <target><source>task3-apps-script/Main.gs</source><tests>—</tests></target>
+      <observability><log-prefix>[Main]</log-prefix><critical-block>BLOCK_UPDATE_RATES</critical-block></observability>
+      <verification-ref>V-M-T3-MAIN</verification-ref>
+      <notes><note-1>try/catch вокруг всей оркестрации; ошибка пишется в статус-ячейку, не валит выполнение тихо.</note-1></notes>
+    </M-T3-MAIN>
+
   </Modules>
 
   <DataFlow>
-    <!-- Потоки данных (DF-RATES, DF-CONVERT, DF-ANALYZE, DF-SHEET) детализируются скиллом grace-plan. -->
+    <DF-RATES NAME="Загрузка списка курсов" TRIGGER="GET /api/rates">
+      <step-1>Frontend.ApiClient вызывает GET /api/rates</step-1>
+      <step-2>ApiRoutes запрашивает RatesCache.get_snapshot()</step-2>
+      <step-3>RatesCache при истечении TTL вызывает CbrClient.fetch_rates()</step-3>
+      <step-4>CbrClient выполняет httpx-запрос с retry, парсит JSON в RatesSnapshot</step-4>
+      <step-5>ApiRoutes маппит снимок в RatesResponse, фронтенд рендерит список</step-5>
+      <evidence>[CbrClient][fetch_rates][BLOCK_FETCH_WITH_RETRY]; [RatesCache][get_snapshot][BLOCK_REFRESH_IF_STALE]; тест test_api.py</evidence>
+    </DF-RATES>
+    <DF-CONVERT NAME="Конвертация суммы" TRIGGER="POST /api/convert">
+      <step-1>Frontend отправляет POST /api/convert с amount/from/to</step-1>
+      <step-2>FastAPI валидирует тело по ConvertRequest (иначе 422)</step-2>
+      <step-3>ApiRoutes берёт снимок из RatesCache</step-3>
+      <step-4>CurrencyConverter.convert считает кросс-курс через RUB с номиналом</step-4>
+      <step-5>Результат возвращается как ConvertResponse</step-5>
+      <evidence>[CurrencyConverter][convert][BLOCK_CROSS_RATE]; тест test_converter.py, test_api.py</evidence>
+    </DF-CONVERT>
+    <DF-ANALYZE NAME="Аналитика курсов в CLI" TRIGGER="python -m cbr_cli">
+      <step-1>Cli разбирает аргументы и настраивает логирование</step-1>
+      <step-2>CbrClient.fetch_rates() получает RatesSnapshot</step-2>
+      <step-3>RateAnalyzer считает дельты, %, топ движений, summary</step-3>
+      <step-4>ConsoleReporter печатает таблицу; FileExporter пишет CSV/JSON</step-4>
+      <step-5>Cli возвращает exit code (0 успех, &gt;0 ошибка)</step-5>
+      <evidence>[Cli][main][BLOCK_RUN_PIPELINE]; [RateAnalyzer][analyze][BLOCK_COMPUTE_DELTAS]; тест test_cli.py</evidence>
+    </DF-ANALYZE>
+    <DF-SHEET NAME="Выгрузка курсов в Google Таблицу" TRIGGER="меню / time-триггер">
+      <step-1>Пользователь жмёт пункт меню или срабатывает триггер -> updateRates()</step-1>
+      <step-2>CbrService.fetchRates() через UrlFetchApp получает и парсит JSON</step-2>
+      <step-3>SheetWriter.writeRates() пишет курсы по столбцам</step-3>
+      <step-4>SheetWriter.writeStatus() пишет успех + время в статус-ячейку</step-4>
+      <step-5>При ошибке Main ловит исключение и пишет текст ошибки в статус-ячейку</step-5>
+      <evidence>[Main][updateRates][BLOCK_UPDATE_RATES]; [CbrService][fetchRates][BLOCK_FETCH_RATES]; ручная проверка в таблице</evidence>
+    </DF-SHEET>
   </DataFlow>
 
   <ImplementationOrder>
-    <!-- Фазы и шаги заполняются скиллом grace-plan. -->
+    <Phase-1 name="Task 2 — async CLI-аналитик" status="pending">
+      <goal>Полностью рабочий асинхронный CLI с Docker, экспортом и тестами — самый изолированный проект, служит эталоном паттернов клиента/ошибок.</goal>
+      <step-1 module="M-T2-CONFIG" status="pending" verification="V-M-T2-CONFIG">Конфигурация CLI</step-1>
+      <step-2 module="M-T2-ERRORS" status="pending" verification="V-M-T2-ERRORS">Иерархия исключений</step-2>
+      <step-3 module="M-T2-DOMAIN" status="pending" verification="V-M-T2-DOMAIN">Доменные модели</step-3>
+      <step-4 module="M-T2-CBR-CLIENT" status="pending" verification="V-M-T2-CBR-CLIENT">Async HTTP-клиент с retry</step-4>
+      <step-5 module="M-T2-ANALYTICS" status="pending" verification="V-M-T2-ANALYTICS">Аналитика курсов</step-5>
+      <step-6 module="M-T2-REPORT" status="pending" verification="V-M-T2-REPORT">Консольный отчёт и экспорт</step-6>
+      <step-7 module="M-T2-CLI" status="pending" verification="V-M-T2-CLI">Точка входа CLI</step-7>
+      <step-8 status="pending" kind="packaging">Упаковка: Dockerfile, requirements.txt, README, пример вывода</step-8>
+      <checkpoint>
+        <condition>pytest task2-cbr-cli/tests — все тесты зелёные</condition>
+        <condition>docker build task2-cbr-cli — успешная сборка</condition>
+        <condition>Запуск контейнера выдаёт читаемую таблицу и создаёт файл экспорта</condition>
+        <condition>knowledge-graph.xml и verification-plan.xml обновлены для всех модулей Task 2</condition>
+        <on-fail>green→далее; yellow→git reset --hard HEAD~1 шага, journal, далее; red→grace afk ask (ROLLBACK/STOP)</on-fail>
+      </checkpoint>
+    </Phase-1>
+
+    <Phase-2 name="Task 1 — FastAPI веб-конвертер" status="pending">
+      <goal>Рабочий веб-конвертер с async-бэкендом, TTL-кэшем, фронтендом, Docker и тестами.</goal>
+      <step-1 module="M-T1-CONFIG" status="pending" verification="V-M-T1-CONFIG">Конфигурация веб-приложения</step-1>
+      <step-2 module="M-T1-ERRORS" status="pending" verification="V-M-T1-ERRORS">Иерархия исключений</step-2>
+      <step-3 module="M-T1-SCHEMAS" status="pending" verification="V-M-T1-SCHEMAS">Pydantic-схемы API</step-3>
+      <step-4 module="M-T1-DOMAIN" status="pending" verification="V-M-T1-DOMAIN">Доменные модели</step-4>
+      <step-5 module="M-T1-CBR-CLIENT" status="pending" verification="V-M-T1-CBR-CLIENT">Async HTTP-клиент с retry</step-5>
+      <step-6 module="M-T1-CONVERTER" status="pending" verification="V-M-T1-CONVERTER">Конвертер валют (кросс-курс)</step-6>
+      <step-7 module="M-T1-CACHE" status="pending" verification="V-M-T1-CACHE">Async TTL-кэш курсов</step-7>
+      <step-8 module="M-T1-API" status="pending" verification="V-M-T1-API">HTTP-роуты</step-8>
+      <step-9 module="M-T1-APP" status="pending" verification="V-M-T1-APP">Сборка FastAPI-приложения</step-9>
+      <step-10 module="M-T1-FRONTEND" status="pending" verification="V-M-T1-FRONTEND">Фронтенд (HTML/CSS/JS)</step-10>
+      <step-11 status="pending" kind="packaging">Упаковка: Dockerfile, requirements.txt, README, конфиг деплоя</step-11>
+      <checkpoint>
+        <condition>pytest task1-currency-web/tests — все тесты зелёные</condition>
+        <condition>docker build task1-currency-web — успешная сборка</condition>
+        <condition>Контейнер поднимается, GET /api/health отвечает 200</condition>
+        <condition>knowledge-graph.xml и verification-plan.xml обновлены для всех модулей Task 1</condition>
+        <on-fail>green→далее; yellow→rollback шага+journal; red→grace afk ask</on-fail>
+      </checkpoint>
+    </Phase-2>
+
+    <Phase-3 name="Task 3 — Google Apps Script" status="pending">
+      <goal>Готовый к установке набор .gs-файлов с обработкой ошибок и инструкцией.</goal>
+      <step-1 module="M-T3-CONFIG" status="pending" verification="V-M-T3-CONFIG">Константы конфигурации</step-1>
+      <step-2 module="M-T3-CBR-SERVICE" status="pending" verification="V-M-T3-CBR-SERVICE">Сервис получения курсов (UrlFetchApp)</step-2>
+      <step-3 module="M-T3-SHEET-WRITER" status="pending" verification="V-M-T3-SHEET-WRITER">Запись в таблицу</step-3>
+      <step-4 module="M-T3-MAIN" status="pending" verification="V-M-T3-MAIN">Точка входа: меню и updateRates</step-4>
+      <step-5 status="pending" kind="packaging">README с инструкцией установки и описанием триггера</step-5>
+      <checkpoint>
+        <condition>Код всех .gs-файлов проходит ревью на корректность UrlFetchApp и обработки ошибок</condition>
+        <condition>Инструкция установки полная и воспроизводимая</condition>
+        <condition>knowledge-graph.xml и verification-plan.xml обновлены для модулей Task 3</condition>
+        <on-fail>red→grace afk defer (ручная проверка в таблице требует человека)</on-fail>
+      </checkpoint>
+    </Phase-3>
+
+    <Phase-4 name="Сдача" status="pending">
+      <goal>Единый документ сдачи и финальная проверка целостности.</goal>
+      <step-1 status="pending" kind="docs">SUBMISSION.md: пояснения по задачам, затраченное время, описание работы с Claude Code, ссылки</step-1>
+      <step-2 status="pending" kind="docs">Корневой README монорепозитория</step-2>
+      <step-3 status="pending" kind="verification">Финальная проверка: grace lint = 0, все тесты зелёные, git-история чистая</step-3>
+      <checkpoint>
+        <condition>grace lint --path . завершается с кодом 0</condition>
+        <condition>pytest по обоим Python-проектам зелёный</condition>
+        <condition>Все артефакты сдачи на месте, ссылки актуальны</condition>
+        <on-fail>red→grace afk defer для человека</on-fail>
+      </checkpoint>
+    </Phase-4>
   </ImplementationOrder>
 
   <ExecutionPolicy>

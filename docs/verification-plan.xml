@@ -7,18 +7,322 @@
     <phase-level-focus>Полная регрессия по Python-проектам плюс grace lint.</phase-level-focus>
     <redaction>Не логировать секреты, токены и сырые высокорисковые payload.</redaction>
     <manual-note>Task 3 (Google Apps Script) проверяется вручную в Google Таблице — автотесты недоступны в среде Apps Script.</manual-note>
+    <network-policy>Реальные сетевые вызовы в тестах запрещены; HTTP мокируется через respx.</network-policy>
   </GlobalPolicy>
 
   <CriticalFlows>
-    <!-- Критические верификационные потоки (VF-*) заполняются скиллом grace-plan. -->
+    <VF-RATES NAME="Загрузка курсов" USE_CASES="UC-101,UC-103" DATA_FLOW="DF-RATES" PRIORITY="high">
+      <scenario>Клиент запрашивает /api/rates; кэш холодный — выполняется один внешний запрос; повторный запрос в пределах TTL внешнего вызова не делает.</scenario>
+      <expected-outcome>Возвращён список валют с курсами и суточной дельтой; внешний API вызван ровно один раз.</expected-outcome>
+      <required-signals>
+        <log-marker>[CbrClient][fetch_rates][BLOCK_FETCH_WITH_RETRY]</log-marker>
+        <log-marker>[RatesCache][get_snapshot][BLOCK_REFRESH_IF_STALE]</log-marker>
+        <trace-sequence>BLOCK_REFRESH_IF_STALE -> BLOCK_FETCH_WITH_RETRY -> RETURNED</trace-sequence>
+      </required-signals>
+    </VF-RATES>
+    <VF-CONVERT NAME="Конвертация валют" USE_CASES="UC-102" DATA_FLOW="DF-CONVERT" PRIORITY="high">
+      <scenario>Клиент конвертирует сумму между двумя валютами, в т.ч. с номиналом &gt; 1.</scenario>
+      <expected-outcome>Результат математически верен; невалидный ввод даёт 422; неизвестная валюта — 400.</expected-outcome>
+      <required-signals>
+        <log-marker>[CurrencyConverter][convert][BLOCK_CROSS_RATE]</log-marker>
+      </required-signals>
+    </VF-CONVERT>
+    <VF-ANALYZE NAME="Аналитика в CLI" USE_CASES="UC-201,UC-202,UC-203" DATA_FLOW="DF-ANALYZE" PRIORITY="high">
+      <scenario>CLI получает курсы, считает производные значения, печатает таблицу и экспортирует файл; путь ошибки даёт ненулевой exit code.</scenario>
+      <expected-outcome>Корректная таблица и валидный CSV/JSON; при недоступном API — понятное сообщение и exit code &gt; 0.</expected-outcome>
+      <required-signals>
+        <log-marker>[Cli][main][BLOCK_RUN_PIPELINE]</log-marker>
+        <log-marker>[RateAnalyzer][analyze][BLOCK_COMPUTE_DELTAS]</log-marker>
+      </required-signals>
+    </VF-ANALYZE>
+    <VF-SHEET NAME="Выгрузка в Google Таблицу" USE_CASES="UC-301,UC-302,UC-303" DATA_FLOW="DF-SHEET" PRIORITY="high">
+      <scenario>Триггер запускает updateRates; курсы пишутся в столбцы; при сбое API статус-ячейка получает текст ошибки.</scenario>
+      <expected-outcome>Таблица заполнена структурированно; ошибки видимы в статус-ячейке.</expected-outcome>
+      <required-signals>
+        <log-marker>[Main][updateRates][BLOCK_UPDATE_RATES]</log-marker>
+        <manual>Ручная проверка в Google Таблице.</manual>
+      </required-signals>
+    </VF-SHEET>
   </CriticalFlows>
 
   <ModuleVerification>
-    <!-- Помодульные контракты верификации (V-M-*) заполняются скиллом grace-plan. -->
+
+    <!-- ===== Task 1 ===== -->
+    <V-M-T1-CONFIG MODULE="M-T1-CONFIG" PRIORITY="medium">
+      <test-files><file>task1-currency-web/tests/unit/test_config.py</file></test-files>
+      <module-checks><check-1>pytest task1-currency-web/tests/unit/test_config.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">Settings собираются с дефолтами без переменных окружения.</scenario-1>
+        <scenario-2 kind="success">Переменные окружения переопределяют дефолты.</scenario-2>
+      </scenarios>
+      <required-log-markers><marker-1>[Config][get_settings][BLOCK_BUILD_SETTINGS]</marker-1></required-log-markers>
+    </V-M-T1-CONFIG>
+
+    <V-M-T1-ERRORS MODULE="M-T1-ERRORS" PRIORITY="low">
+      <test-files><file>—</file></test-files>
+      <module-checks><check-1>Проверяется косвенно через test_cbr_client.py и test_converter.py</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">Подклассы корректно наследуются от базовых CbrError/ConversionError.</scenario-1>
+      </scenarios>
+      <required-log-markers><marker-1>—</marker-1></required-log-markers>
+    </V-M-T1-ERRORS>
+
+    <V-M-T1-DOMAIN MODULE="M-T1-DOMAIN" PRIORITY="high">
+      <test-files><file>task1-currency-web/tests/unit/test_domain.py</file></test-files>
+      <module-checks><check-1>pytest task1-currency-web/tests/unit/test_domain.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">Currency.rate_per_unit = value / nominal.</scenario-1>
+        <scenario-2 kind="success">RatesSnapshot.get(code) возвращает валюту; RUB присутствует синтетически.</scenario-2>
+        <scenario-3 kind="failure">RatesSnapshot.get неизвестного кода бросает UnknownCurrencyError.</scenario-3>
+      </scenarios>
+      <required-log-markers><marker-1>[Domain][get][BLOCK_LOOKUP_CURRENCY]</marker-1></required-log-markers>
+    </V-M-T1-DOMAIN>
+
+    <V-M-T1-CBR-CLIENT MODULE="M-T1-CBR-CLIENT" PRIORITY="high">
+      <test-files><file>task1-currency-web/tests/unit/test_cbr_client.py</file></test-files>
+      <module-checks><check-1>pytest task1-currency-web/tests/unit/test_cbr_client.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">Валидный JSON парсится в RatesSnapshot с верным числом валют.</scenario-1>
+        <scenario-2 kind="failure">HTTP 500 повторяется retry-раз и затем бросает CbrUnavailableError.</scenario-2>
+        <scenario-3 kind="failure">Не-JSON тело ответа бросает CbrResponseError.</scenario-3>
+        <scenario-4 kind="failure">JSON без ключа Valute бросает CbrResponseError.</scenario-4>
+        <scenario-5 kind="failure">Таймаут соединения бросает CbrUnavailableError.</scenario-5>
+      </scenarios>
+      <required-log-markers><marker-1>[CbrClient][fetch_rates][BLOCK_FETCH_WITH_RETRY]</marker-1></required-log-markers>
+      <required-trace-assertions><assertion-1>После исчерпания retry дальнейших HTTP-запросов нет.</assertion-1></required-trace-assertions>
+    </V-M-T1-CBR-CLIENT>
+
+    <V-M-T1-CACHE MODULE="M-T1-CACHE" PRIORITY="high">
+      <test-files><file>task1-currency-web/tests/unit/test_cache.py</file></test-files>
+      <module-checks><check-1>pytest task1-currency-web/tests/unit/test_cache.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">Первый вызов делает fetch; второй в пределах TTL — нет.</scenario-1>
+        <scenario-2 kind="success">После истечения TTL выполняется новый fetch.</scenario-2>
+        <scenario-3 kind="success">Конкурентные вызовы при холодном кэше дают ровно один fetch.</scenario-3>
+      </scenarios>
+      <required-log-markers><marker-1>[RatesCache][get_snapshot][BLOCK_REFRESH_IF_STALE]</marker-1></required-log-markers>
+    </V-M-T1-CACHE>
+
+    <V-M-T1-CONVERTER MODULE="M-T1-CONVERTER" PRIORITY="high">
+      <test-files><file>task1-currency-web/tests/unit/test_converter.py</file></test-files>
+      <module-checks><check-1>pytest task1-currency-web/tests/unit/test_converter.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">RUB -> USD и USD -> RUB взаимно обратны.</scenario-1>
+        <scenario-2 kind="success">Кросс-курс USD -> EUR равен (rate_USD / rate_EUR).</scenario-2>
+        <scenario-3 kind="success">Валюта с номиналом &gt; 1 (например JPY, nominal=100) конвертируется корректно.</scenario-3>
+        <scenario-4 kind="failure">Неизвестная валюта бросает UnknownCurrencyError.</scenario-4>
+        <scenario-5 kind="success">Конвертация валюты в саму себя возвращает ту же сумму.</scenario-5>
+      </scenarios>
+      <required-log-markers><marker-1>[CurrencyConverter][convert][BLOCK_CROSS_RATE]</marker-1></required-log-markers>
+    </V-M-T1-CONVERTER>
+
+    <V-M-T1-SCHEMAS MODULE="M-T1-SCHEMAS" PRIORITY="medium">
+      <test-files><file>task1-currency-web/tests/test_api.py</file></test-files>
+      <module-checks><check-1>Проверяется через test_api.py (валидация 422)</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="failure">amount &lt;= 0 отклоняется валидацией.</scenario-1>
+        <scenario-2 kind="failure">Код валюты неверной длины отклоняется.</scenario-2>
+      </scenarios>
+      <required-log-markers><marker-1>—</marker-1></required-log-markers>
+    </V-M-T1-SCHEMAS>
+
+    <V-M-T1-API MODULE="M-T1-API" PRIORITY="high">
+      <test-files><file>task1-currency-web/tests/test_api.py</file></test-files>
+      <module-checks><check-1>pytest task1-currency-web/tests/test_api.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">GET /api/health возвращает 200.</scenario-1>
+        <scenario-2 kind="success">GET /api/rates возвращает список валют (с замоканным API).</scenario-2>
+        <scenario-3 kind="success">POST /api/convert с валидным телом возвращает корректный результат.</scenario-3>
+        <scenario-4 kind="failure">POST /api/convert с amount &lt;= 0 даёт 422.</scenario-4>
+        <scenario-5 kind="failure">Недоступность API транслируется в 502.</scenario-5>
+        <scenario-6 kind="failure">Неизвестная валюта в /api/convert даёт 400.</scenario-6>
+      </scenarios>
+      <required-log-markers><marker-1>[ApiRoutes][handle_convert][BLOCK_HANDLE_CONVERT]</marker-1></required-log-markers>
+      <wave-follow-up>Интеграционная проверка всего приложения через TestClient.</wave-follow-up>
+    </V-M-T1-API>
+
+    <V-M-T1-APP MODULE="M-T1-APP" PRIORITY="medium">
+      <test-files><file>task1-currency-web/tests/test_api.py</file></test-files>
+      <module-checks><check-1>Проверяется через test_api.py (TestClient поднимает create_app)</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">create_app собирает приложение; lifespan инициализирует кэш.</scenario-1>
+      </scenarios>
+      <required-log-markers><marker-1>[AppFactory][lifespan][BLOCK_LIFESPAN]</marker-1></required-log-markers>
+    </V-M-T1-APP>
+
+    <V-M-T1-FRONTEND MODULE="M-T1-FRONTEND" PRIORITY="low">
+      <test-files><file>—</file></test-files>
+      <module-checks><check-1>Ручная проверка в браузере: загрузка курсов и конвертация</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">Список курсов загружается и отображается.</scenario-1>
+        <scenario-2 kind="success">Конвертация показывает результат; ошибка API отображается в UI.</scenario-2>
+      </scenarios>
+      <required-log-markers><marker-1>—</marker-1></required-log-markers>
+    </V-M-T1-FRONTEND>
+
+    <!-- ===== Task 2 ===== -->
+    <V-M-T2-CONFIG MODULE="M-T2-CONFIG" PRIORITY="medium">
+      <test-files><file>task2-cbr-cli/tests/unit/test_config.py</file></test-files>
+      <module-checks><check-1>pytest task2-cbr-cli/tests/unit/test_config.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">load_settings даёт дефолты без env.</scenario-1>
+        <scenario-2 kind="success">env переопределяет дефолты.</scenario-2>
+      </scenarios>
+      <required-log-markers><marker-1>—</marker-1></required-log-markers>
+    </V-M-T2-CONFIG>
+
+    <V-M-T2-ERRORS MODULE="M-T2-ERRORS" PRIORITY="low">
+      <test-files><file>—</file></test-files>
+      <module-checks><check-1>Проверяется косвенно через test_cbr_client.py и test_cli.py</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">Подклассы наследуются от CbrError.</scenario-1>
+      </scenarios>
+      <required-log-markers><marker-1>—</marker-1></required-log-markers>
+    </V-M-T2-ERRORS>
+
+    <V-M-T2-DOMAIN MODULE="M-T2-DOMAIN" PRIORITY="high">
+      <test-files><file>task2-cbr-cli/tests/unit/test_domain.py</file></test-files>
+      <module-checks><check-1>pytest task2-cbr-cli/tests/unit/test_domain.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">Currency хранит поля корректно; модели иммутабельны.</scenario-1>
+        <scenario-2 kind="success">RateAnalysis отражает направление изменения.</scenario-2>
+      </scenarios>
+      <required-log-markers><marker-1>—</marker-1></required-log-markers>
+    </V-M-T2-DOMAIN>
+
+    <V-M-T2-CBR-CLIENT MODULE="M-T2-CBR-CLIENT" PRIORITY="high">
+      <test-files><file>task2-cbr-cli/tests/unit/test_cbr_client.py</file></test-files>
+      <module-checks><check-1>pytest task2-cbr-cli/tests/unit/test_cbr_client.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">Валидный JSON парсится в RatesSnapshot.</scenario-1>
+        <scenario-2 kind="failure">HTTP 500 после retry -> CbrUnavailableError.</scenario-2>
+        <scenario-3 kind="failure">Не-JSON -> CbrResponseError.</scenario-3>
+        <scenario-4 kind="failure">Нет ключа Valute -> CbrResponseError.</scenario-4>
+      </scenarios>
+      <required-log-markers><marker-1>[CbrClient][fetch_rates][BLOCK_FETCH_WITH_RETRY]</marker-1></required-log-markers>
+      <required-trace-assertions><assertion-1>После исчерпания retry дальнейших HTTP-запросов нет.</assertion-1></required-trace-assertions>
+    </V-M-T2-CBR-CLIENT>
+
+    <V-M-T2-ANALYTICS MODULE="M-T2-ANALYTICS" PRIORITY="high">
+      <test-files><file>task2-cbr-cli/tests/unit/test_analytics.py</file></test-files>
+      <module-checks><check-1>pytest task2-cbr-cli/tests/unit/test_analytics.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">delta_abs и delta_pct считаются верно относительно previous.</scenario-1>
+        <scenario-2 kind="success">top_movers сортирует по убыванию |delta_pct|.</scenario-2>
+        <scenario-3 kind="success">summary даёт корректные агрегаты (средний %, экстремумы).</scenario-3>
+        <scenario-4 kind="success">Валюта с previous = 0 / отсутствующим не валит расчёт.</scenario-4>
+      </scenarios>
+      <required-log-markers><marker-1>[RateAnalyzer][analyze][BLOCK_COMPUTE_DELTAS]</marker-1></required-log-markers>
+    </V-M-T2-ANALYTICS>
+
+    <V-M-T2-REPORT MODULE="M-T2-REPORT" PRIORITY="high">
+      <test-files><file>task2-cbr-cli/tests/unit/test_report.py</file></test-files>
+      <module-checks><check-1>pytest task2-cbr-cli/tests/unit/test_report.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">ConsoleReporter формирует таблицу со всеми валютами.</scenario-1>
+        <scenario-2 kind="success">FileExporter пишет валидный CSV с корректными заголовками.</scenario-2>
+        <scenario-3 kind="success">FileExporter пишет валидный JSON (ensure_ascii=False).</scenario-3>
+      </scenarios>
+      <required-log-markers><marker-1>[Reporter][export][BLOCK_WRITE_FILE]</marker-1></required-log-markers>
+    </V-M-T2-REPORT>
+
+    <V-M-T2-CLI MODULE="M-T2-CLI" PRIORITY="high">
+      <test-files><file>task2-cbr-cli/tests/test_cli.py</file></test-files>
+      <module-checks><check-1>pytest task2-cbr-cli/tests/test_cli.py -q</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">Успешный прогон с замоканным API даёт exit code 0 и файл экспорта.</scenario-1>
+        <scenario-2 kind="failure">Недоступный API даёт exit code 1 и сообщение об ошибке.</scenario-2>
+        <scenario-3 kind="failure">Некорректный формат ответа даёт exit code 2.</scenario-3>
+      </scenarios>
+      <required-log-markers><marker-1>[Cli][main][BLOCK_RUN_PIPELINE]</marker-1></required-log-markers>
+      <wave-follow-up>End-to-end прогон CLI с замоканным HTTP.</wave-follow-up>
+    </V-M-T2-CLI>
+
+    <!-- ===== Task 3 (ручная верификация) ===== -->
+    <V-M-T3-CONFIG MODULE="M-T3-CONFIG" PRIORITY="low">
+      <test-files><file>—</file></test-files>
+      <module-checks><check-1>Ревью кода: CONFIG заморожен и содержит все нужные константы</check-1></module-checks>
+      <scenarios><scenario-1 kind="success">CONFIG доступен из всех .gs-файлов проекта.</scenario-1></scenarios>
+      <required-log-markers><marker-1>—</marker-1></required-log-markers>
+    </V-M-T3-CONFIG>
+
+    <V-M-T3-CBR-SERVICE MODULE="M-T3-CBR-SERVICE" PRIORITY="high">
+      <test-files><file>—</file></test-files>
+      <module-checks><check-1>Ревью + ручная проверка в Apps Script: успешный fetch и путь ошибки</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">fetchRates возвращает массив строк курсов из живого API.</scenario-1>
+        <scenario-2 kind="failure">HTTP-код != 200 бросает Error с понятным текстом.</scenario-2>
+        <scenario-3 kind="failure">Некорректный JSON бросает Error.</scenario-3>
+      </scenarios>
+      <required-log-markers><marker-1>[CbrService][fetchRates][BLOCK_FETCH_RATES]</marker-1></required-log-markers>
+    </V-M-T3-CBR-SERVICE>
+
+    <V-M-T3-SHEET-WRITER MODULE="M-T3-SHEET-WRITER" PRIORITY="medium">
+      <test-files><file>—</file></test-files>
+      <module-checks><check-1>Ручная проверка: курсы попадают в нужные столбцы, статус-ячейка обновляется</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">writeRates заполняет столбцы; старые данные очищаются.</scenario-1>
+        <scenario-2 kind="success">writeStatus пишет успех и ошибку различимо.</scenario-2>
+      </scenarios>
+      <required-log-markers><marker-1>[SheetWriter][writeRates][BLOCK_WRITE_RATES]</marker-1></required-log-markers>
+    </V-M-T3-SHEET-WRITER>
+
+    <V-M-T3-MAIN MODULE="M-T3-MAIN" PRIORITY="high">
+      <test-files><file>—</file></test-files>
+      <module-checks><check-1>Ручная проверка: пункт меню и time-триггер запускают updateRates; ошибка видна в статус-ячейке</check-1></module-checks>
+      <scenarios>
+        <scenario-1 kind="success">updateRates из меню заполняет таблицу.</scenario-1>
+        <scenario-2 kind="failure">Сбой API приводит к записи ошибки в статус-ячейку, без тихого падения.</scenario-2>
+      </scenarios>
+      <required-log-markers><marker-1>[Main][updateRates][BLOCK_UPDATE_RATES]</marker-1></required-log-markers>
+    </V-M-T3-MAIN>
+
   </ModuleVerification>
 
   <PhaseGates>
-    <!-- Фазовые гейты заполняются скиллом grace-plan. -->
+    <Gate-Phase-1 PHASE="Phase-1">
+      <goal>Task 2 полностью реализован, протестирован и упакован в Docker.</goal>
+      <commands>
+        <command-1>pytest task2-cbr-cli/tests -q</command-1>
+        <command-2>docker build -t cbr-cli task2-cbr-cli</command-2>
+        <command-3>grace lint --path .</command-3>
+      </commands>
+      <required-evidence>
+        <evidence-1>Все модули Task 2 имеют module-local тесты (кроме errors/config — косвенно).</evidence-1>
+        <evidence-2>Контейнер выдаёт читаемую таблицу и файл экспорта.</evidence-2>
+      </required-evidence>
+    </Gate-Phase-1>
+    <Gate-Phase-2 PHASE="Phase-2">
+      <goal>Task 1 полностью реализован, протестирован, упакован в Docker.</goal>
+      <commands>
+        <command-1>pytest task1-currency-web/tests -q</command-1>
+        <command-2>docker build -t currency-web task1-currency-web</command-2>
+        <command-3>grace lint --path .</command-3>
+      </commands>
+      <required-evidence>
+        <evidence-1>Тесты клиента, кэша, конвертера и API зелёные.</evidence-1>
+        <evidence-2>GET /api/health отвечает 200 в поднятом контейнере.</evidence-2>
+      </required-evidence>
+    </Gate-Phase-2>
+    <Gate-Phase-3 PHASE="Phase-3">
+      <goal>Task 3 готов к установке, обработка ошибок корректна.</goal>
+      <commands><command-1>grace lint --path .</command-1></commands>
+      <required-evidence>
+        <evidence-1>Ревью .gs-файлов: UrlFetchApp с muteHttpExceptions и проверкой кода ответа; ошибки идут в статус-ячейку.</evidence-1>
+        <evidence-2>README с инструкцией установки и описанием триггеров.</evidence-2>
+      </required-evidence>
+    </Gate-Phase-3>
+    <Gate-Phase-4 PHASE="Phase-4">
+      <goal>Документ сдачи собран, целостность подтверждена.</goal>
+      <commands>
+        <command-1>pytest task1-currency-web/tests task2-cbr-cli/tests -q</command-1>
+        <command-2>grace lint --path .</command-2>
+      </commands>
+      <required-evidence>
+        <evidence-1>SUBMISSION.md содержит пояснения, время, описание работы с Claude Code.</evidence-1>
+        <evidence-2>grace lint завершается кодом 0.</evidence-2>
+      </required-evidence>
+    </Gate-Phase-4>
   </PhaseGates>
 
   <FailurePackets>

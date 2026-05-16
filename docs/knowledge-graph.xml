@@ -1,14 +1,278 @@
 <KnowledgeGraph>
   <Project NAME="Тестовое задание: утилиты курсов валют ЦБ РФ" VERSION="0.2.0">
     <keywords>курсы валют, ЦБ РФ, cbr-xml-daily, конвертер валют, FastAPI, async, httpx, asyncio, Docker, Google Apps Script, UrlFetchApp, REST API, retry, TTL-кэш</keywords>
-    <annotation>Монорепозиторий из трёх независимых самодостаточных утилит вокруг публичного API курсов валют ЦБ РФ. Модули будут заполнены на этапе grace-plan.</annotation>
+    <annotation>Монорепозиторий из трёх независимых самодостаточных утилит вокруг публичного API курсов валют ЦБ РФ. Три проекта не имеют кросс-задачных зависимостей.</annotation>
 
-    <!-- Модули заполняются скиллом grace-plan.
-         Module declarations use unique ID-based tags (e.g., M-CBR-CLIENT, M-CONVERTER).
-         Module types: ENTRY_POINT, CORE_LOGIC, DATA_LAYER, UI_COMPONENT, UTILITY, INTEGRATION
-         CrossLinks connect dependent modules: <CrossLink from="M-SOURCE" to="M-TARGET" relation="..." />
-         STATUS: planned | partial | implemented
-    -->
+    <!-- ==================== TASK 1: task1-currency-web ==================== -->
+    <M-T1-CONFIG NAME="Config" TYPE="UTILITY" STATUS="planned">
+      <purpose>Типизированная конфигурация веб-конвертера из переменных окружения.</purpose>
+      <path>task1-currency-web/app/config.py</path>
+      <depends>none</depends>
+      <verification-ref>V-M-T1-CONFIG</verification-ref>
+      <annotations>
+        <type-Settings PURPOSE="pydantic-settings: cbr_api_url, http_timeout, retry_attempts, retry_backoff, cache_ttl_seconds, host, port" />
+        <fn-get_settings PURPOSE="Кэшированный синглтон Settings" />
+      </annotations>
+    </M-T1-CONFIG>
+
+    <M-T1-ERRORS NAME="Errors" TYPE="UTILITY" STATUS="planned">
+      <purpose>Иерархия доменных исключений конвертера.</purpose>
+      <path>task1-currency-web/app/errors.py</path>
+      <depends>none</depends>
+      <verification-ref>V-M-T1-ERRORS</verification-ref>
+      <annotations>
+        <class-CbrError PURPOSE="Базовое исключение интеграции с API ЦБ РФ" />
+        <class-CbrUnavailableError PURPOSE="API недоступен после retry" />
+        <class-CbrResponseError PURPOSE="Некорректный формат ответа" />
+        <class-ConversionError PURPOSE="Базовое исключение конвертации" />
+        <class-UnknownCurrencyError PURPOSE="Валюта отсутствует в снимке курсов" />
+      </annotations>
+    </M-T1-ERRORS>
+
+    <M-T1-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" STATUS="planned">
+      <purpose>Неизменяемые доменные модели курсов и снимка курсов.</purpose>
+      <path>task1-currency-web/app/domain.py</path>
+      <depends>M-T1-ERRORS</depends>
+      <verification-ref>V-M-T1-DOMAIN</verification-ref>
+      <annotations>
+        <type-Currency PURPOSE="frozen dataclass курса валюты; rate_per_unit, delta" />
+        <type-RatesSnapshot PURPOSE="frozen dataclass снимка курсов; метод get(code)" />
+      </annotations>
+    </M-T1-DOMAIN>
+
+    <M-T1-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" STATUS="planned">
+      <purpose>Async HTTP-клиент к API ЦБ РФ с retry и валидацией формата.</purpose>
+      <path>task1-currency-web/app/cbr_client.py</path>
+      <depends>M-T1-CONFIG, M-T1-DOMAIN, M-T1-ERRORS</depends>
+      <verification-ref>V-M-T1-CBR-CLIENT</verification-ref>
+      <annotations>
+        <class-CbrClient PURPOSE="async-клиент; fetch_rates() -> RatesSnapshot" />
+      </annotations>
+    </M-T1-CBR-CLIENT>
+
+    <M-T1-CACHE NAME="RatesCache" TYPE="DATA_LAYER" STATUS="planned">
+      <purpose>Async-safe TTL-кэш снимка курсов поверх CbrClient.</purpose>
+      <path>task1-currency-web/app/cache.py</path>
+      <depends>M-T1-CBR-CLIENT, M-T1-CONFIG</depends>
+      <verification-ref>V-M-T1-CACHE</verification-ref>
+      <annotations>
+        <class-RatesCache PURPOSE="get_snapshot() с TTL и single-flight через asyncio.Lock" />
+      </annotations>
+    </M-T1-CACHE>
+
+    <M-T1-CONVERTER NAME="CurrencyConverter" TYPE="CORE_LOGIC" STATUS="planned">
+      <purpose>Кросс-конвертация валют через рубль с учётом номинала.</purpose>
+      <path>task1-currency-web/app/converter.py</path>
+      <depends>M-T1-DOMAIN, M-T1-ERRORS</depends>
+      <verification-ref>V-M-T1-CONVERTER</verification-ref>
+      <annotations>
+        <class-CurrencyConverter PURPOSE="convert(amount, from_code, to_code, snapshot) -> ConversionResult" />
+        <type-ConversionResult PURPOSE="результат конвертации с эффективным курсом" />
+      </annotations>
+    </M-T1-CONVERTER>
+
+    <M-T1-SCHEMAS NAME="ApiSchemas" TYPE="TYPES" STATUS="planned">
+      <purpose>Pydantic-схемы запросов и ответов REST API.</purpose>
+      <path>task1-currency-web/app/schemas.py</path>
+      <depends>none</depends>
+      <verification-ref>V-M-T1-SCHEMAS</verification-ref>
+      <annotations>
+        <type-ConvertRequest PURPOSE="тело запроса конвертации" />
+        <type-ConvertResponse PURPOSE="ответ конвертации" />
+        <type-RateItem PURPOSE="одна валюта в ответе списка курсов" />
+        <type-RatesResponse PURPOSE="ответ списка курсов" />
+      </annotations>
+    </M-T1-SCHEMAS>
+
+    <M-T1-API NAME="ApiRoutes" TYPE="ENTRY_POINT" STATUS="planned">
+      <purpose>HTTP-роуты конвертера: курсы, конвертация, health.</purpose>
+      <path>task1-currency-web/app/api.py</path>
+      <depends>M-T1-SCHEMAS, M-T1-CACHE, M-T1-CONVERTER, M-T1-ERRORS</depends>
+      <verification-ref>V-M-T1-API</verification-ref>
+      <annotations>
+        <fn-build_router PURPOSE="APIRouter с /api/rates, /api/convert, /api/health" />
+      </annotations>
+    </M-T1-API>
+
+    <M-T1-APP NAME="AppFactory" TYPE="ENTRY_POINT" STATUS="planned">
+      <purpose>Сборка FastAPI-приложения: lifespan, DI, статика.</purpose>
+      <path>task1-currency-web/app/main.py</path>
+      <depends>M-T1-API, M-T1-CONFIG, M-T1-CACHE, M-T1-CBR-CLIENT</depends>
+      <verification-ref>V-M-T1-APP</verification-ref>
+      <annotations>
+        <fn-create_app PURPOSE="Фабрика FastAPI-приложения" />
+        <export-app PURPOSE="ASGI-инстанс для uvicorn" />
+      </annotations>
+    </M-T1-APP>
+
+    <M-T1-FRONTEND NAME="Frontend" TYPE="UI_COMPONENT" STATUS="planned">
+      <purpose>Клиентский интерфейс конвертера на HTML/CSS/JS.</purpose>
+      <path>task1-currency-web/static/</path>
+      <depends>none</depends>
+      <verification-ref>V-M-T1-FRONTEND</verification-ref>
+      <annotations>
+        <class-ApiClient PURPOSE="JS async-обёртка над fetch к /api/*" />
+        <class-ConverterController PURPOSE="JS-связывание DOM, валидация, рендер" />
+      </annotations>
+    </M-T1-FRONTEND>
+
+    <!-- ==================== TASK 2: task2-cbr-cli ==================== -->
+    <M-T2-CONFIG NAME="Config" TYPE="UTILITY" STATUS="planned">
+      <purpose>Конфигурация CLI-аналитика.</purpose>
+      <path>task2-cbr-cli/cbr_cli/config.py</path>
+      <depends>none</depends>
+      <verification-ref>V-M-T2-CONFIG</verification-ref>
+      <annotations>
+        <type-Settings PURPOSE="frozen dataclass: cbr_api_url, http_timeout, retry_attempts, retry_backoff" />
+        <fn-load_settings PURPOSE="Сборка Settings из env с дефолтами" />
+      </annotations>
+    </M-T2-CONFIG>
+
+    <M-T2-ERRORS NAME="Errors" TYPE="UTILITY" STATUS="planned">
+      <purpose>Иерархия исключений CLI-аналитика.</purpose>
+      <path>task2-cbr-cli/cbr_cli/errors.py</path>
+      <depends>none</depends>
+      <verification-ref>V-M-T2-ERRORS</verification-ref>
+      <annotations>
+        <class-CbrError PURPOSE="Базовое исключение интеграции с API" />
+        <class-CbrUnavailableError PURPOSE="API недоступен после retry" />
+        <class-CbrResponseError PURPOSE="Некорректный формат ответа" />
+      </annotations>
+    </M-T2-ERRORS>
+
+    <M-T2-DOMAIN NAME="Domain" TYPE="CORE_LOGIC" STATUS="planned">
+      <purpose>Доменные модели курсов и аналитический разбор валюты.</purpose>
+      <path>task2-cbr-cli/cbr_cli/domain.py</path>
+      <depends>M-T2-ERRORS</depends>
+      <verification-ref>V-M-T2-DOMAIN</verification-ref>
+      <annotations>
+        <type-Currency PURPOSE="frozen dataclass курса валюты" />
+        <type-RatesSnapshot PURPOSE="frozen dataclass снимка курсов" />
+        <type-RateAnalysis PURPOSE="разбор валюты: delta_abs, delta_pct, direction" />
+      </annotations>
+    </M-T2-DOMAIN>
+
+    <M-T2-CBR-CLIENT NAME="CbrClient" TYPE="INTEGRATION" STATUS="planned">
+      <purpose>Async HTTP-клиент к API ЦБ РФ с retry и валидацией.</purpose>
+      <path>task2-cbr-cli/cbr_cli/cbr_client.py</path>
+      <depends>M-T2-CONFIG, M-T2-DOMAIN, M-T2-ERRORS</depends>
+      <verification-ref>V-M-T2-CBR-CLIENT</verification-ref>
+      <annotations>
+        <class-CbrClient PURPOSE="async-клиент; fetch_rates() -> RatesSnapshot" />
+      </annotations>
+    </M-T2-CBR-CLIENT>
+
+    <M-T2-ANALYTICS NAME="RateAnalyzer" TYPE="CORE_LOGIC" STATUS="planned">
+      <purpose>Расчёт производных значений по курсам и агрегатов.</purpose>
+      <path>task2-cbr-cli/cbr_cli/analytics.py</path>
+      <depends>M-T2-DOMAIN</depends>
+      <verification-ref>V-M-T2-ANALYTICS</verification-ref>
+      <annotations>
+        <class-RateAnalyzer PURPOSE="analyze, top_movers, summary" />
+        <type-AnalysisSummary PURPOSE="агрегаты: средний %, экстремумы" />
+      </annotations>
+    </M-T2-ANALYTICS>
+
+    <M-T2-REPORT NAME="Reporter" TYPE="CORE_LOGIC" STATUS="planned">
+      <purpose>Консольная таблица и экспорт результата в CSV/JSON.</purpose>
+      <path>task2-cbr-cli/cbr_cli/report.py</path>
+      <depends>M-T2-DOMAIN</depends>
+      <verification-ref>V-M-T2-REPORT</verification-ref>
+      <annotations>
+        <class-ConsoleReporter PURPOSE="render таблицы в stdout" />
+        <class-FileExporter PURPOSE="export в CSV или JSON" />
+      </annotations>
+    </M-T2-REPORT>
+
+    <M-T2-CLI NAME="Cli" TYPE="ENTRY_POINT" STATUS="planned">
+      <purpose>Точка входа CLI: argparse, оркестрация, exit codes.</purpose>
+      <path>task2-cbr-cli/cbr_cli/__main__.py</path>
+      <depends>M-T2-CONFIG, M-T2-ERRORS, M-T2-CBR-CLIENT, M-T2-ANALYTICS, M-T2-REPORT</depends>
+      <verification-ref>V-M-T2-CLI</verification-ref>
+      <annotations>
+        <fn-main PURPOSE="async-оркестратор; возвращает exit code" />
+        <fn-build_parser PURPOSE="argparse конфигурации CLI" />
+      </annotations>
+    </M-T2-CLI>
+
+    <!-- ==================== TASK 3: task3-apps-script ==================== -->
+    <M-T3-CONFIG NAME="Config" TYPE="UTILITY" STATUS="planned">
+      <purpose>Константы Apps Script: URL, лист, столбцы.</purpose>
+      <path>task3-apps-script/Config.gs</path>
+      <depends>none</depends>
+      <verification-ref>V-M-T3-CONFIG</verification-ref>
+      <annotations>
+        <export-CONFIG PURPOSE="Замороженный объект констант" />
+      </annotations>
+    </M-T3-CONFIG>
+
+    <M-T3-CBR-SERVICE NAME="CbrService" TYPE="INTEGRATION" STATUS="planned">
+      <purpose>Получение и парсинг курсов через UrlFetchApp.</purpose>
+      <path>task3-apps-script/CbrService.gs</path>
+      <depends>M-T3-CONFIG</depends>
+      <verification-ref>V-M-T3-CBR-SERVICE</verification-ref>
+      <annotations>
+        <class-CbrService PURPOSE="fetchRates() -> массив строк курсов" />
+      </annotations>
+    </M-T3-CBR-SERVICE>
+
+    <M-T3-SHEET-WRITER NAME="SheetWriter" TYPE="DATA_LAYER" STATUS="planned">
+      <purpose>Запись курсов и статуса в Google Таблицу.</purpose>
+      <path>task3-apps-script/SheetWriter.gs</path>
+      <depends>M-T3-CONFIG</depends>
+      <verification-ref>V-M-T3-SHEET-WRITER</verification-ref>
+      <annotations>
+        <class-SheetWriter PURPOSE="writeRates, writeStatus" />
+      </annotations>
+    </M-T3-SHEET-WRITER>
+
+    <M-T3-MAIN NAME="Main" TYPE="ENTRY_POINT" STATUS="planned">
+      <purpose>Точка входа Apps Script: меню и updateRates.</purpose>
+      <path>task3-apps-script/Main.gs</path>
+      <depends>M-T3-CONFIG, M-T3-CBR-SERVICE, M-T3-SHEET-WRITER</depends>
+      <verification-ref>V-M-T3-MAIN</verification-ref>
+      <annotations>
+        <fn-onOpen PURPOSE="Добавляет кастомное меню при открытии таблицы" />
+        <fn-updateRates PURPOSE="Основная функция обновления курсов по триггеру" />
+      </annotations>
+    </M-T3-MAIN>
+
+    <!-- ==================== CrossLinks ==================== -->
+    <CrossLink from="M-T1-DOMAIN" to="M-T1-ERRORS" relation="uses exceptions" />
+    <CrossLink from="M-T1-CBR-CLIENT" to="M-T1-CONFIG" relation="reads settings" />
+    <CrossLink from="M-T1-CBR-CLIENT" to="M-T1-DOMAIN" relation="produces" />
+    <CrossLink from="M-T1-CBR-CLIENT" to="M-T1-ERRORS" relation="raises" />
+    <CrossLink from="M-T1-CACHE" to="M-T1-CBR-CLIENT" relation="wraps" />
+    <CrossLink from="M-T1-CACHE" to="M-T1-CONFIG" relation="reads ttl" />
+    <CrossLink from="M-T1-CONVERTER" to="M-T1-DOMAIN" relation="consumes" />
+    <CrossLink from="M-T1-CONVERTER" to="M-T1-ERRORS" relation="raises" />
+    <CrossLink from="M-T1-API" to="M-T1-SCHEMAS" relation="validates with" />
+    <CrossLink from="M-T1-API" to="M-T1-CACHE" relation="reads snapshot" />
+    <CrossLink from="M-T1-API" to="M-T1-CONVERTER" relation="invokes" />
+    <CrossLink from="M-T1-API" to="M-T1-ERRORS" relation="translates to HTTP" />
+    <CrossLink from="M-T1-APP" to="M-T1-API" relation="mounts" />
+    <CrossLink from="M-T1-APP" to="M-T1-CONFIG" relation="reads settings" />
+    <CrossLink from="M-T1-APP" to="M-T1-CACHE" relation="initializes in lifespan" />
+    <CrossLink from="M-T1-APP" to="M-T1-CBR-CLIENT" relation="owns lifecycle" />
+    <CrossLink from="M-T1-FRONTEND" to="M-T1-API" relation="calls over HTTP" />
+
+    <CrossLink from="M-T2-DOMAIN" to="M-T2-ERRORS" relation="uses exceptions" />
+    <CrossLink from="M-T2-CBR-CLIENT" to="M-T2-CONFIG" relation="reads settings" />
+    <CrossLink from="M-T2-CBR-CLIENT" to="M-T2-DOMAIN" relation="produces" />
+    <CrossLink from="M-T2-CBR-CLIENT" to="M-T2-ERRORS" relation="raises" />
+    <CrossLink from="M-T2-ANALYTICS" to="M-T2-DOMAIN" relation="consumes" />
+    <CrossLink from="M-T2-REPORT" to="M-T2-DOMAIN" relation="consumes" />
+    <CrossLink from="M-T2-CLI" to="M-T2-CONFIG" relation="reads settings" />
+    <CrossLink from="M-T2-CLI" to="M-T2-CBR-CLIENT" relation="invokes" />
+    <CrossLink from="M-T2-CLI" to="M-T2-ANALYTICS" relation="invokes" />
+    <CrossLink from="M-T2-CLI" to="M-T2-REPORT" relation="invokes" />
+    <CrossLink from="M-T2-CLI" to="M-T2-ERRORS" relation="maps to exit code" />
+
+    <CrossLink from="M-T3-CBR-SERVICE" to="M-T3-CONFIG" relation="reads constants" />
+    <CrossLink from="M-T3-SHEET-WRITER" to="M-T3-CONFIG" relation="reads constants" />
+    <CrossLink from="M-T3-MAIN" to="M-T3-CBR-SERVICE" relation="invokes" />
+    <CrossLink from="M-T3-MAIN" to="M-T3-SHEET-WRITER" relation="invokes" />
+    <CrossLink from="M-T3-MAIN" to="M-T3-CONFIG" relation="reads constants" />
 
   </Project>
 </KnowledgeGraph>
